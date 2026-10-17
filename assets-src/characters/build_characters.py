@@ -7,6 +7,8 @@
 オプション：
   --preview   assets-src/characters/preview/<id>.png に確認用の画像を描く（正面・横・走りのポーズ）
   --blend     確認用に assets-src/characters/<id>.blend も保存する
+  --legacy    取り込んだモデル（assets-src/characters/models/<id>.glb）があるキャラクターも、
+              基本図形で作った昔の全身モデルを書き出す（ふだんは一人称の腕だけ作る）
   キャラクター名（meia など）を並べると、そのキャラクターだけ作る
 
 書き出すもの（client/assets/characters/）
@@ -1201,6 +1203,11 @@ def main():
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
         _mats.clear()
+        if os.path.exists(os.path.join(HERE, "models", f"{cid}.glb")) and "--legacy" not in args:
+            # 全身のモデルは取り込んだモデル（build_imported.py）を使う。ここでは一人称の腕だけ作る
+            fp = build_fp_arms(cid)
+            print(f"書き出し: {fp} ({os.path.getsize(fp) // 1024} KB)（全身は build_imported.py）")
+            continue
         c = Character(cid)
         build(c)
         c.join_by_bone()

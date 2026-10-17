@@ -15,7 +15,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 OUT_DIR = os.path.join(ROOT, "client", "assets", "characters")
 WEAPON_DIR = os.path.join(ROOT, "client", "assets", "weapons")
-NAMES = ["meia", "pearl", "miranda", "sora", "alex", "ranmaru", "grunt", "assault", "heavy", "mortar"]
+# 6人のパイロットの遠く用は build_imported.py が作る（取り込んだモデル）
+NAMES = ["grunt", "assault", "heavy", "mortar"]
 WEAPONS = ["ar", "lmg", "smg", "shotgun", "sniper", "pistol", "burst", "psmg", "spinlmg", "autosg", "marksman", "revolver"]
 # 残す面の割合（部品ごと）。小さい部品は形が崩れないように、少し多めに残す
 RATIO = 0.3

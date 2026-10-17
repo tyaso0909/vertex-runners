@@ -6,6 +6,7 @@
  * （右手がグリップ、左手の方向が銃口）。どのアニメーションでも両手と銃が離れない。
  */
 import * as THREE from 'three';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 import type { CharacterModel } from '../assets';
 
 export type CharacterAnim = 'Idle' | 'Run' | 'WallRun' | 'Slide' | 'Jump' | 'Shoot' | 'Ability' | 'Death' | 'Crouch';
@@ -45,7 +46,8 @@ export class CharacterView {
 
   /** root を渡すと、それを使う（試合用に軽くしたモデル。actorModel.ts） */
   constructor(model: CharacterModel, root?: THREE.Object3D) {
-    this.root = root ?? model.scene.clone(true);
+    // 骨で曲がる皮のモデルは、骨ごと複製しないと動かない（clone では元の骨につながったままになる）
+    this.root = root ?? SkeletonUtils.clone(model.scene);
     if (!root)
       this.root.traverse((o) => {
         const m = o as THREE.Mesh;

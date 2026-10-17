@@ -8,6 +8,9 @@
  * （半透明の部品だけは別にもう1つ）。これで1体あたり 1〜2 回の描画になる。
  *
  * マテリアルには、消耗戦の演出（倒れたときに消えていく・光学迷彩・フェイズシフト・被弾の光・チームの色の縁取り）を入れる。
+ *
+ * 取り込んだモデル（build_imported.py。テクスチャ付きの1枚の皮が骨で曲がる形）は、すでに1つのスキンメッシュなので
+ * そのまま使い、演出に要る頂点の情報（色は白・発光なし）と輪郭用の向きを足して、テクスチャを貼ったマテリアルにする。
  */
 import * as THREE from 'three';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
@@ -42,10 +45,18 @@ export const makeFx = (team: THREE.Color): ActorFx => ({
 export class ActorTemplate {
   readonly root: THREE.Object3D;
   readonly animations: THREE.AnimationClip[];
+  /** 取り込んだモデルのテクスチャ（userData に入れると複製のときに壊れるので、ここに持つ） */
+  private readonly map: THREE.Texture | null = null;
 
   /** lod：遠くに見えるとき用の、面を減らしたモデル（骨の名前は model と同じ。build_lod.py で作る） */
   constructor(model: CharacterModel, lod?: CharacterModel) {
     this.animations = model.animations;
+    const skinned = findSkinned(model.scene);
+    if (skinned) {
+      this.map = (skinned.material as THREE.MeshStandardMaterial).map ?? null;
+      this.root = skinnedRoot(model, lod);
+      return;
+    }
     const root = model.scene.clone(true);
     root.updateMatrixWorld(true);
     const rootInv = root.matrixWorld.clone().invert();
@@ -153,7 +164,7 @@ export class ActorTemplate {
       if (!clear && body) {
         sm.material = body;
       } else {
-        const mat = actorMaterial(fx, clear);
+        const mat = actorMaterial(fx, clear, clear ? null : this.map);
         sm.material = mat;
         materials.push(mat);
         if (!clear) body = mat;
@@ -162,6 +173,68 @@ export class ActorTemplate {
     });
     return { root, materials };
   }
+}
+
+function findSkinned(root: THREE.Object3D): THREE.SkinnedMesh | null {
+  let found: THREE.SkinnedMesh | null = null;
+  root.traverse((o) => {
+    if (!found && (o as THREE.SkinnedMesh).isSkinnedMesh) found = o as THREE.SkinnedMesh;
+  });
+  return found;
+}
+
+/** テクスチャ付きの皮の形に、演出用の頂点の情報（色・発光・金属とざらつき）と輪郭用の向きを足す */
+function skinnedGeometry(src: THREE.BufferGeometry, mat: THREE.MeshStandardMaterial): THREE.BufferGeometry {
+  const g = src.clone();
+  const n = g.attributes.position.count;
+  const col = new Float32Array(n * 4).fill(1);
+  const pbr = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    pbr[i * 3] = mat.metalness ?? 0.05;
+    pbr[i * 3 + 1] = mat.roughness ?? 0.6;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(col, 4));
+  g.setAttribute('aEmissive', new THREE.BufferAttribute(new Float32Array(n * 3), 3));
+  g.setAttribute('aPbr', new THREE.BufferAttribute(pbr, 3));
+  addOutlineNormals(g);
+  g.computeBoundingSphere();
+  if (g.boundingSphere) g.boundingSphere.radius += 0.6;
+  return g;
+}
+
+/**
+ * 取り込んだモデル（1枚の皮・テクスチャ付き）の体を作る。遠く用のモデル（同じ骨）は、骨の名前で
+ * 近く用の骨格の番号に付け替えて、同じ骨格で動かす。
+ */
+function skinnedRoot(model: CharacterModel, lod?: CharacterModel): THREE.Object3D {
+  const root = SkeletonUtils.clone(model.scene);
+  root.updateMatrixWorld(true);
+  const body = findSkinned(root)!;
+  const mat = body.material as THREE.MeshStandardMaterial;
+  body.geometry = skinnedGeometry(body.geometry, mat);
+  body.name = 'ActorBody';
+  body.castShadow = true;
+  body.receiveShadow = true;
+  if (lod) {
+    const lsrc = findSkinned(lod.scene);
+    if (lsrc) {
+      const geo = skinnedGeometry(lsrc.geometry, mat);
+      // 遠く用の骨の番号 → 近く用の骨の番号（名前で対応させる）
+      const map = lsrc.skeleton.bones.map((b) => Math.max(0, body.skeleton.bones.findIndex((x) => x.name === b.name)));
+      const si = geo.attributes.skinIndex;
+      for (let i = 0; i < si.count; i++) for (let k = 0; k < 4; k++) si.setComponent(i, k, map[si.getComponent(i, k)] ?? 0);
+      const lm = new THREE.SkinnedMesh(geo, body.material);
+      lm.name = 'ActorBodyLod';
+      lm.visible = false;
+      lm.position.copy(body.position);
+      lm.quaternion.copy(body.quaternion);
+      lm.scale.copy(body.scale);
+      body.parent!.add(lm);
+      lm.updateMatrixWorld(true);
+      lm.bind(body.skeleton, body.bindMatrix);
+    }
+  }
+  return root;
 }
 
 interface Part {
@@ -311,6 +384,9 @@ if (diffuseColor.a < 0.01) discard;
   return mat;
 }
 
+/** 取り込んだモデル（テクスチャ付き）の、縁の光の強さの倍率 */
+export const RIM_K_TEXTURED = 0.3;
+
 const FX_HEAD = /* glsl */ `
 uniform float uDissolve;
 uniform float uCloak;
@@ -329,9 +405,11 @@ float fxNoise(vec3 x) {
 }
 `;
 
-/** 1体ごとのマテリアル（頂点の色・発光を使い、演出を足す） */
-function actorMaterial(fx: ActorFx, clear: boolean): THREE.MeshStandardMaterial {
-  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, transparent: clear, depthWrite: !clear });
+/** 1体ごとのマテリアル（頂点の色・発光を使い、演出を足す）。map：取り込んだモデルのテクスチャ */
+function actorMaterial(fx: ActorFx, clear: boolean, map: THREE.Texture | null = null): THREE.MeshStandardMaterial {
+  const mat = new THREE.MeshStandardMaterial({ vertexColors: true, transparent: clear, depthWrite: !clear, map });
+  // 取り込んだモデルは面が細かく、縁の光が体じゅうに出て白っぽく見えるので、縁の光を弱める
+  mat.defines = { ACTOR_RIM_K: map ? String(RIM_K_TEXTURED) : '1.0' };
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uDissolve = fx.dissolve;
     sh.uniforms.uCloak = fx.cloak;
@@ -380,13 +458,13 @@ if (uPhase > 0.0 && fxDither < uPhase * 0.55) discard;`,
 float fxRim = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 3.5);
 float fxEdge = uDissolve > 0.0 ? 1.0 - smoothstep(0.0, 0.09, fxN - fxTh) : 0.0;
 // 暗い所でも見分けやすいよう、元の色を少しだけ自分で光らせる（弱い補助光の代わり）
-totalEmissiveRadiance = vEm + diffuseColor.rgb * 0.07 + uTeam * vPbr.z * 4.0 + uTeam * fxRim * uRim + uTeam * fxEdge * 7.0
+totalEmissiveRadiance = vEm + diffuseColor.rgb * 0.07 + uTeam * vPbr.z * 4.0 + uTeam * fxRim * uRim * ACTOR_RIM_K + uTeam * fxEdge * 7.0
   + vec3(1.0, 0.92, 0.85) * uHit * 0.9 + vec3(0.55, 0.3, 1.0) * uPhase * (0.6 + fxRim * 2.0)
   + vec3(0.6, 0.9, 1.0) * uCloak * fxRim * 1.5;`,
       );
   };
   // 同じ作りのシェーダーを使い回す
-  mat.customProgramCacheKey = () => (clear ? 'actor-clear' : 'actor');
+  mat.customProgramCacheKey = () => (clear ? 'actor-clear' : map ? 'actor-tex' : 'actor');
   return mat;
 }
 
