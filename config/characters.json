@@ -1,0 +1,140 @@
+{
+  "COMMON": {
+    "MAX_HEALTH": 100,
+    "REGEN_DELAY": 5.0,
+    "REGEN_RATE": 12,
+    "RESPAWN_TIME": 2.0,
+    "SELF_GRENADE_DAMAGE_MUL": 0.6
+  },
+  "meia": {
+    "NAME": "メイア",
+    "ROLE": "機動",
+    "COLOR": "#e8202e",
+    "ORDER": 1,
+    "ABILITY": {
+      "TYPE": "grapple",
+      "NAME": "ワイヤーフック",
+      "DESC": "狙った壁や足場にワイヤーを撃ち込み、勢いよく引き寄せられる。的に当てると、的を引き寄せてよろめかせる。",
+      "COOLDOWN": 12,
+      "RANGE": 38,
+      "PULL_ACCEL": 55,
+      "PULL_MAX_SPEED": 24,
+      "MAX_TIME": 1.6,
+      "RELEASE_DIST": 1.6,
+      "TARGET_PULL_DIST": 4.0,
+      "TARGET_STAGGER_TIME": 1.2
+    },
+    "PASSIVE": {
+      "NAME": "壁走りの継続時間 +30%",
+      "DESC": "壁走りを長く続けられる。",
+      "WALLRUN_TIME_MUL": 1.3
+    },
+    "BOT": "高所へ移動するとき、離れた敵へ詰めるときに使う"
+  },
+  "pearl": {
+    "NAME": "パール",
+    "ROLE": "隠密",
+    "COLOR": "#b4e44a",
+    "ORDER": 2,
+    "ABILITY": {
+      "TYPE": "cloak",
+      "NAME": "光学迷彩",
+      "DESC": "5秒間ほぼ透明になる。射撃・格闘・グレネードで解除される。",
+      "COOLDOWN": 20,
+      "DURATION": 5.0
+    },
+    "PASSIVE": {
+      "NAME": "足音が小さくなる",
+      "DESC": "足音が敵に聞こえにくい（音量 35%）。",
+      "FOOTSTEP_VOLUME": 0.35
+    },
+    "BOT": "敵の背後へ回り込むとき、退避するときに使う"
+  },
+  "miranda": {
+    "NAME": "ミランダ",
+    "ROLE": "防御",
+    "COLOR": "#ff7a1a",
+    "ORDER": 3,
+    "ABILITY": {
+      "TYPE": "shield",
+      "NAME": "シールドウォール",
+      "DESC": "前方に弾を防ぐエネルギーの壁を8秒間展開する。味方は通り抜けて撃てる。",
+      "COOLDOWN": 25,
+      "DURATION": 8.0,
+      "WIDTH": 4.2,
+      "HEIGHT": 2.4,
+      "DISTANCE": 1.6
+    },
+    "PASSIVE": {
+      "NAME": "体力の自動回復が早い",
+      "DESC": "回復が始まるまで 3秒、回復の速さ 2倍。",
+      "REGEN_DELAY": 3.0,
+      "REGEN_RATE_MUL": 2.0
+    },
+    "BOT": "撃ち合いが始まったとき、TD ではコアの前で使う"
+  },
+  "sora": {
+    "NAME": "ソラ",
+    "ROLE": "支援・索敵",
+    "COLOR": "#ffd21f",
+    "ORDER": 4,
+    "ABILITY": {
+      "TYPE": "sonar",
+      "NAME": "パルスソナー",
+      "DESC": "周囲40mの敵を3秒間、壁越しに赤く表示する（味方全員に共有）。",
+      "COOLDOWN": 18,
+      "RADIUS": 40,
+      "REVEAL_TIME": 3.0,
+      "WAVE_SPEED": 60
+    },
+    "PASSIVE": {
+      "NAME": "倒した敵が弾薬を落とす",
+      "DESC": "拾うと両方の武器の弾倉が満タンになる。TD ではタレットの修理速度 +50%。",
+      "AMMO_DROP": true,
+      "TURRET_REPAIR_MUL": 1.5
+    },
+    "BOT": "ウェーブ開始時、敵が見えないときに使う"
+  },
+  "alex": {
+    "NAME": "アレックス",
+    "ROLE": "自己強化・突撃",
+    "COLOR": "#2f6bff",
+    "ORDER": 5,
+    "ABILITY": {
+      "TYPE": "overdrive",
+      "NAME": "オーバードライブ",
+      "DESC": "6秒間、移動速度 +30%、体力の回復速度 2倍。発動中はダメージを受けた直後でも回復し続ける。",
+      "COOLDOWN": 18,
+      "DURATION": 6.0,
+      "SPEED_MUL": 1.3,
+      "REGEN_MUL": 2.0,
+      "INJECT_TIME": 0.4
+    },
+    "PASSIVE": {
+      "NAME": "移動速度 +10%",
+      "DESC": "常に少し速く走れる。",
+      "SPEED_MUL": 1.1
+    },
+    "BOT": "交戦開始時、体力が半分以下のとき、TD では味方の蘇生に急ぐときに使う"
+  },
+  "ranmaru": {
+    "NAME": "蘭丸",
+    "ROLE": "奇襲・離脱",
+    "COLOR": "#8a5cff",
+    "ORDER": 6,
+    "ABILITY": {
+      "TYPE": "phase",
+      "NAME": "フェイズシフト",
+      "DESC": "0.5秒の準備のあと3秒間、位相のずれた空間に入る。一切のダメージを受けず、移動速度 +30%。その間は射撃・アビリティ・グレネード・蘇生ができない。",
+      "COOLDOWN": 20,
+      "WINDUP": 0.5,
+      "DURATION": 3.0,
+      "SPEED_MUL": 1.3
+    },
+    "PASSIVE": {
+      "NAME": "狙われていると気づく",
+      "DESC": "敵の照準に入ると、画面の縁がうっすら紫に光る。"
+    },
+    "BOT": "体力が半分以下で被弾したとき、敵の集団に囲まれたときに使う"
+  }
+}

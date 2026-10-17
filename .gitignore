@@ -1,0 +1,21 @@
+# 依存パッケージ（npm install で入る）
+node_modules/
+
+# ビルドしたもの（npm run build などで作る）
+dist/
+dist-single/
+dist-artifact/
+
+# Blender のスクリプトが作る中間ファイル・確認用の画像（npm run models・map で作り直せる）
+assets-src/maps/*_raw.glb
+assets-src/maps/*_layout.json
+assets-src/*/preview/
+__pycache__/
+*.pyc
+
+# そのほか
+*.log
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

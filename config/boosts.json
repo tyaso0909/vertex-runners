@@ -1,0 +1,62 @@
+{
+  "STREAK_BONUS": 0.25,
+  "STREAK_BONUS_MAX": 1.0,
+  "BOOSTS": {
+    "maphack": {
+      "NAME": "マップハック",
+      "SHORT": "MAP HACK",
+      "DESC": "15 秒間、敵のパイロットと歩兵の位置を、1.5 秒ごとにチーム全員のミニマップへ映し出す。",
+      "COST": 30,
+      "DURATION": 15,
+      "PULSE": 1.5
+    },
+    "holopilot": {
+      "NAME": "ホロパイロット",
+      "SHORT": "HOLO PILOT",
+      "DESC": "自分そっくりの立体映像が 5 体、前へ広がって走り出す。敵には本物のパイロットに見え、撃たれると消える。",
+      "COST": 25,
+      "COUNT": 5,
+      "DURATION": 9,
+      "SPREAD": 80
+    },
+    "phaserewind": {
+      "NAME": "フェイズリワインド",
+      "SHORT": "PHASE REWIND",
+      "DESC": "位相をずらし、5 秒前にいた場所まで通ってきた道を一瞬で戻る。戻る間は弾が当たらない（体力はそのまま）。",
+      "COST": 25,
+      "REWIND": 5,
+      "TRAVEL": 0.6
+    },
+    "hardcover": {
+      "NAME": "ハードカバー",
+      "SHORT": "HARD COVER",
+      "DESC": "目の前に、敵の弾を止める大きな盾を 20 秒間立てる。味方の弾は通る。",
+      "COST": 30,
+      "WIDTH": 6,
+      "HEIGHT": 2.8,
+      "DISTANCE": 2.2,
+      "DURATION": 20
+    },
+    "ticks": {
+      "NAME": "ティック",
+      "SHORT": "TICKS",
+      "DESC": "クモ型の小さな地雷を 2 つ投げる。着地すると近くの敵へ這っていき、そばで爆発する。",
+      "COST": 35,
+      "COUNT": 2,
+      "THROW_SPEED": 13,
+      "SPEED": 7.5,
+      "SEEK_RANGE": 28,
+      "TRIGGER": 2.2,
+      "DAMAGE": 110,
+      "MIN_DAMAGE": 30,
+      "RADIUS": 4,
+      "LIFE": 12
+    },
+    "diceroll": {
+      "NAME": "ダイスロール",
+      "SHORT": "DICE ROLL",
+      "DESC": "使うまで何が出るか分からない。ほかの 5 つのブーストのどれかが出る。ゲージは一番早くたまる。",
+      "COST": 20
+    }
+  }
+}

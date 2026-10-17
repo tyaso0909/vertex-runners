@@ -1,0 +1,1268 @@
+{
+  "INTRO_TIME": 5,
+  "PREP_TIME": 30,
+  "END_DELAY": 4,
+  "CORE_HEALTH": 8000,
+  "START_CREDITS": 600,
+  "WAVE_BONUS": 200,
+  "WAVE_BONUS_PER_WAVE": 40,
+  "TURRET_LIMIT": 4,
+  "SELL_REFUND": 0.5,
+  "PLACE_RANGE": 7,
+  "PLACE_GAP": 2.4,
+  "SELL_HOLD": 0.8,
+  "TURRET_ARMOR": 0.6,
+  "DOWN_TIME": 10,
+  "REVIVE_TIME": 3,
+  "REVIVE_RANGE": 2.2,
+  "REVIVE_HEALTH": 0.5,
+  "RESPAWN_TIME": 15,
+  "MAX_ALIVE": 56,
+  "POD": {
+    "WARN": 3.2,
+    "OPEN": 0.8,
+    "LEAVE": 5.0,
+    "IMPACT_RADIUS": 3.6,
+    "IMPACT_DAMAGE": 60,
+    "IMPACT_PUSH": 11,
+    "CLEARANCE": 4.0,
+    "SIZE": 4
+  },
+  "HEALTH_PER_WAVE": 0.05,
+  "CORE_ALERT_TIME": 3,
+  "ENEMIES": {
+    "grunt": {
+      "NAME": "歩兵",
+      "DESC": "近くのプレイヤー・タレットを撃つ。いなければコアを撃つ",
+      "HEALTH": 100,
+      "SPEED_MUL": 0.85,
+      "DAMAGE_MUL": 0.3,
+      "REWARD": 8,
+      "ENGAGE_RANGE": 24
+    },
+    "assault": {
+      "NAME": "突撃兵",
+      "DESC": "足が速い。コアに取り付いて自爆する",
+      "HEALTH": 70,
+      "SPEED_MUL": 1.12,
+      "REWARD": 12,
+      "EXPLODE_RANGE": 4.2,
+      "EXPLODE_CORE_DAMAGE": 110,
+      "EXPLODE_RADIUS": 5.5,
+      "EXPLODE_DAMAGE": 70
+    },
+    "heavy": {
+      "NAME": "重装兵",
+      "DESC": "正面の盾で弾を止める。背中が弱点。タレットを優先して狙う",
+      "HEALTH": 450,
+      "SPEED_MUL": 0.62,
+      "DAMAGE_MUL": 0.32,
+      "REWARD": 35,
+      "ENGAGE_RANGE": 34
+    },
+    "mortar": {
+      "NAME": "迫撃砲兵",
+      "DESC": "降りると少し高い所（屋上・砲撃陣地・防壁の上）へ上って迫撃砲を据え、そこからコアを砲撃し続ける。近づくと拳銃で応戦する",
+      "HEALTH": 150,
+      "SPEED_MUL": 0.82,
+      "DAMAGE_MUL": 0.2,
+      "REWARD": 30,
+      "ENGAGE_RANGE": 20,
+      "PANIC_RANGE": 11,
+      "SETUP_TIME": 4,
+      "FIRE_INTERVAL": 8,
+      "SHELL_CORE_DAMAGE": 14,
+      "SHELL_RADIUS": 4.5,
+      "SHELL_DAMAGE": 45,
+      "SHELL_TURRET_MUL": 0.5,
+      "SHELL_GRAVITY": 18,
+      "SHELL_APEX": 14,
+      "SHELL_APEX_PER_M": 0.18,
+      "AIM_SIDE": 6.5,
+      "CORE_REACH": 7.5,
+      "SPREAD": 1.5,
+      "SPREAD_PER_M": 0.02,
+      "MIN_RANGE": 25,
+      "MAX_RANGE": 125,
+      "GIVE_UP": 50
+    },
+    "drone": {
+      "NAME": "ドローン",
+      "DESC": "壁を飛び越えてコアを直接撃つ",
+      "HEALTH": 160,
+      "SPEED": 9,
+      "DAMAGE_MUL": 0.38,
+      "REWARD": 20,
+      "FIRE_RANGE": 28
+    },
+    "boss": {
+      "NAME": "大型兵器",
+      "DESC": "弱点は背中の炉心と正面のセンサー。ロケットでタレット、次にコアを狙う",
+      "HEALTH": 7000,
+      "SPEED": 1.9,
+      "REWARD": 400,
+      "STOP_DIST": 24,
+      "ROCKET_INTERVAL": 3.4,
+      "ROCKET_COUNT": 4,
+      "ROCKET_DAMAGE": 70,
+      "ROCKET_RADIUS": 4.5,
+      "ROCKET_SPEED": 26,
+      "ROCKET_RANGE": 55,
+      "MG_DAMAGE_MUL": 0.25,
+      "MG_RANGE": 32
+    }
+  },
+  "TURRETS": {
+    "mg": {
+      "NAME": "機銃タレット",
+      "DESC": "近くの敵を速い連射で撃つ。ドローンにも当たる",
+      "COST": 300,
+      "HEALTH": 600,
+      "RANGE": 30,
+      "FIRE_INTERVAL": 0.14,
+      "DAMAGE": 8,
+      "SPREAD": 3.0,
+      "TURN_SPEED": 220,
+      "AIR": true
+    },
+    "rocket": {
+      "NAME": "ロケットタレット",
+      "DESC": "遠くの地上の敵へロケットを撃つ。範囲ダメージ（空には当たらない）",
+      "COST": 600,
+      "HEALTH": 600,
+      "RANGE": 44,
+      "FIRE_INTERVAL": 3.0,
+      "DAMAGE": 120,
+      "MIN_DAMAGE": 30,
+      "RADIUS": 4,
+      "ROCKET_SPEED": 38,
+      "TURN_SPEED": 120,
+      "AIR": false
+    },
+    "slow": {
+      "NAME": "減速フィールド",
+      "DESC": "範囲に入った敵の動きを半分にする",
+      "COST": 400,
+      "HEALTH": 500,
+      "RADIUS": 9,
+      "SLOW": 0.5
+    },
+    "repair": {
+      "NAME": "修理ステーション",
+      "DESC": "近くのタレットとコアを少しずつ直す",
+      "COST": 500,
+      "HEALTH": 500,
+      "RADIUS": 12,
+      "TURRET_RATE": 18,
+      "CORE_RATE": 10
+    }
+  },
+  "ITEMS": {
+    "decoy": {
+      "NAME": "ダミーバルーン",
+      "SHORT": "囮",
+      "DESC": "パイロットの形にふくらむ囮。兵士・ドローン・大型兵器の機銃は、プレイヤーと思って撃つ。近くの突撃兵は囮へ走って自爆する",
+      "COST": 150,
+      "LIMIT": 2,
+      "HEALTH": 320,
+      "ASSAULT_LURE": 14
+    },
+    "wiretrap": {
+      "NAME": "ワイヤートラップ",
+      "SHORT": "罠",
+      "DESC": "置くと3つの機雷が左右に広がり、レーザーでつながる。地上の敵がレーザーを横切ると、3つが続けて爆発する（1回きり）",
+      "COST": 250,
+      "LIMIT": 2,
+      "SPAN": 3.6,
+      "BEAM_HEIGHT": 0.62,
+      "ARM_TIME": 1.1,
+      "DAMAGE": 130,
+      "MIN_DAMAGE": 35,
+      "RADIUS": 4.2,
+      "CHAIN_DELAY": 0.16
+    },
+    "barricade": {
+      "NAME": "バリケード",
+      "SHORT": "壁",
+      "DESC": "道をふさぐ装甲の壁。敵は壊すまで足を止めて撃つ。突撃兵はぶつかると自爆する。味方の弾は通り、パイロットは乗り越えられる",
+      "COST": 200,
+      "LIMIT": 2,
+      "HEALTH": 1200,
+      "WIDTH": 4.2,
+      "HEIGHT": 1.25,
+      "ARMOR": 0.5,
+      "ASSAULT_MUL": 2.5
+    },
+    "jumppad": {
+      "NAME": "ジャンプパッド",
+      "SHORT": "跳躍",
+      "DESC": "乗ると高く跳ね上がる（進んでいる向きへ勢いが付く）。屋根の上や壁走りへすぐ移れる",
+      "COST": 120,
+      "LIMIT": 2,
+      "LAUNCH_UP": 14.5,
+      "LAUNCH_FORWARD": 4.5,
+      "RADIUS": 1.05,
+      "COOLDOWN": 0.8
+    },
+    "armor": {
+      "NAME": "アーマー",
+      "SHORT": "装甲",
+      "DESC": "買うとすぐに、体力の上に装甲が付く。ダメージは先に装甲が受ける。このラウンド（ウェーブが終わるまで）だけ。ウェーブ中も買える",
+      "COST": 200,
+      "LIMIT": 1,
+      "AMOUNT": 50
+    }
+  },
+  "UPGRADE": {
+    "MAX_LEVEL": 3,
+    "COST_MUL": [
+      0.6,
+      0.9
+    ],
+    "DAMAGE_MUL": [
+      1,
+      1.35,
+      1.75
+    ],
+    "HEALTH_MUL": [
+      1,
+      1.3,
+      1.65
+    ],
+    "RANGE_MUL": [
+      1,
+      1.1,
+      1.2
+    ],
+    "INTERVAL_MUL": [
+      1,
+      0.88,
+      0.76
+    ],
+    "BLAST_MUL": [
+      1,
+      1.12,
+      1.25
+    ],
+    "RADIUS_MUL": [
+      1,
+      1.15,
+      1.3
+    ],
+    "SLOW": [
+      0.5,
+      0.4,
+      0.32
+    ],
+    "REPAIR_MUL": [
+      1,
+      1.45,
+      1.9
+    ]
+  },
+  "DIFFICULTY": {
+    "easy": {
+      "NAME": "易",
+      "ENEMY_HEALTH": 0.8,
+      "ENEMY_DAMAGE": 0.7,
+      "ENEMY_COUNT": 0.85
+    },
+    "normal": {
+      "NAME": "普",
+      "ENEMY_HEALTH": 1.0,
+      "ENEMY_DAMAGE": 1.0,
+      "ENEMY_COUNT": 1.0
+    },
+    "hard": {
+      "NAME": "難",
+      "ENEMY_HEALTH": 1.1,
+      "ENEMY_DAMAGE": 1.15,
+      "ENEMY_COUNT": 1.0
+    }
+  },
+  "ENEMY_AIM": {
+    "easy": {
+      "REACTION": 1.0,
+      "AIM_ERROR": 8,
+      "AIM_ERROR_MIN": 4.5,
+      "AIM_SETTLE": 1.8,
+      "TURN_SPEED": 160,
+      "BURST": 0.5,
+      "PAUSE": 1.0,
+      "VIEW_RANGE": 40,
+      "FOV": 110,
+      "AIM_SPEED_PENALTY": 0.7,
+      "AIM_RANGE_PENALTY": 0.6
+    },
+    "normal": {
+      "REACTION": 0.85,
+      "AIM_ERROR": 6.5,
+      "AIM_ERROR_MIN": 3.2,
+      "AIM_SETTLE": 1.5,
+      "TURN_SPEED": 190,
+      "BURST": 0.6,
+      "PAUSE": 0.85,
+      "VIEW_RANGE": 45,
+      "FOV": 120,
+      "AIM_SPEED_PENALTY": 0.6,
+      "AIM_RANGE_PENALTY": 0.5
+    },
+    "hard": {
+      "REACTION": 0.6,
+      "AIM_ERROR": 5,
+      "AIM_ERROR_MIN": 2.2,
+      "AIM_SETTLE": 1.2,
+      "TURN_SPEED": 240,
+      "BURST": 0.8,
+      "PAUSE": 0.6,
+      "VIEW_RANGE": 50,
+      "FOV": 130,
+      "AIM_SPEED_PENALTY": 0.5,
+      "AIM_RANGE_PENALTY": 0.4
+    }
+  },
+  "PLAYER_SCALE": {
+    "1": {
+      "COUNT": 0.45,
+      "HEALTH": 0.8
+    },
+    "2": {
+      "COUNT": 0.65,
+      "HEALTH": 0.85
+    },
+    "3": {
+      "COUNT": 0.82,
+      "HEALTH": 0.92
+    },
+    "4": {
+      "COUNT": 1.0,
+      "HEALTH": 1.0
+    }
+  },
+  "WAVES": [
+    {
+      "groups": [
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 6,
+          "route": "front",
+          "delay": 14,
+          "squad": 3,
+          "interval": 8,
+          "drop": "south_west"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 10,
+          "route": "right",
+          "delay": 4,
+          "squad": 4,
+          "interval": 9
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "right",
+          "delay": 20,
+          "squad": 2,
+          "interval": 6
+        },
+        {
+          "type": "grunt",
+          "count": 4,
+          "route": "front",
+          "delay": 24,
+          "squad": 4,
+          "interval": 1,
+          "drop": "wall"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "front",
+          "delay": 20,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "left",
+          "delay": 3,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "left",
+          "delay": 12,
+          "squad": 4,
+          "interval": 8,
+          "drop": "outer"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "front",
+          "delay": 16,
+          "squad": 2,
+          "interval": 6
+        },
+        {
+          "type": "drone",
+          "count": 3,
+          "route": "left",
+          "delay": 22,
+          "squad": 3,
+          "interval": 1
+        },
+        {
+          "type": "grunt",
+          "count": 4,
+          "route": "front",
+          "delay": 30,
+          "squad": 4,
+          "interval": 1,
+          "drop": "inner"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "right",
+          "delay": 14,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "grunt",
+          "count": 14,
+          "route": "left",
+          "delay": 0,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 14,
+          "route": "right",
+          "delay": 2,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 6,
+          "route": "left",
+          "delay": 8,
+          "squad": 3,
+          "interval": 8,
+          "drop": "outer"
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "right",
+          "delay": 10,
+          "squad": 1,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "right",
+          "delay": 16,
+          "squad": 4,
+          "interval": 10,
+          "drop": "wall"
+        },
+        {
+          "type": "assault",
+          "count": 6,
+          "route": "left",
+          "delay": 20,
+          "squad": 3,
+          "interval": 7
+        },
+        {
+          "type": "drone",
+          "count": 4,
+          "route": "right",
+          "delay": 26,
+          "squad": 2,
+          "interval": 4
+        }
+      ]
+    },
+    {
+      "boss": true,
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "left",
+          "delay": 16,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "boss",
+          "count": 1,
+          "route": "front",
+          "delay": 8,
+          "squad": 1,
+          "interval": 1
+        },
+        {
+          "type": "grunt",
+          "count": 14,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 9
+        },
+        {
+          "type": "grunt",
+          "count": 10,
+          "route": "left",
+          "delay": 10,
+          "squad": 4,
+          "interval": 9
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "left",
+          "delay": 20,
+          "squad": 1,
+          "interval": 10,
+          "drop": "wall"
+        },
+        {
+          "type": "assault",
+          "count": 6,
+          "route": "left",
+          "delay": 24,
+          "squad": 3,
+          "interval": 6
+        },
+        {
+          "type": "drone",
+          "count": 4,
+          "route": "front",
+          "delay": 30,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "front",
+          "delay": 36,
+          "squad": 4,
+          "interval": 10,
+          "drop": "inner"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "front",
+          "delay": 14,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "left",
+          "delay": 30,
+          "squad": 2,
+          "interval": 1,
+          "drop": "wall"
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "left",
+          "delay": 2,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "right",
+          "delay": 4,
+          "squad": 4,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "left",
+          "delay": 10,
+          "squad": 4,
+          "interval": 9,
+          "drop": "wall"
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "front",
+          "delay": 12,
+          "squad": 1,
+          "interval": 8
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "left",
+          "delay": 16,
+          "squad": 1,
+          "interval": 8
+        },
+        {
+          "type": "assault",
+          "count": 8,
+          "route": "right",
+          "delay": 18,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "drone",
+          "count": 6,
+          "route": "left",
+          "delay": 24,
+          "squad": 3,
+          "interval": 6
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "right",
+          "delay": 28,
+          "squad": 4,
+          "interval": 9,
+          "drop": "inner"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "front",
+          "delay": 36,
+          "squad": 2,
+          "interval": 4,
+          "drop": "wall"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "right",
+          "delay": 8,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "left",
+          "delay": 26,
+          "squad": 2,
+          "interval": 1,
+          "drop": "inner"
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "left",
+          "delay": 2,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "right",
+          "delay": 4,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "right",
+          "delay": 6,
+          "squad": 4,
+          "interval": 8,
+          "drop": "outer"
+        },
+        {
+          "type": "heavy",
+          "count": 3,
+          "route": "front",
+          "delay": 10,
+          "squad": 1,
+          "interval": 8
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "front",
+          "delay": 12,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "right",
+          "delay": 14,
+          "squad": 1,
+          "interval": 7
+        },
+        {
+          "type": "assault",
+          "count": 6,
+          "route": "left",
+          "delay": 16,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "drone",
+          "count": 5,
+          "route": "right",
+          "delay": 20,
+          "squad": 3,
+          "interval": 6
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "left",
+          "delay": 24,
+          "squad": 4,
+          "interval": 8,
+          "drop": "inner"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "front",
+          "delay": 28,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "right",
+          "delay": 30,
+          "squad": 1,
+          "interval": 6,
+          "drop": "wall"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "front",
+          "delay": 6,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "right",
+          "delay": 26,
+          "squad": 2,
+          "interval": 1,
+          "drop": "wall"
+        },
+        {
+          "type": "grunt",
+          "count": 14,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 14,
+          "route": "left",
+          "delay": 2,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 14,
+          "route": "right",
+          "delay": 4,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "right",
+          "delay": 10,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "heavy",
+          "count": 3,
+          "route": "front",
+          "delay": 10,
+          "squad": 1,
+          "interval": 7
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "left",
+          "delay": 14,
+          "squad": 1,
+          "interval": 7
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "right",
+          "delay": 16,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "drone",
+          "count": 3,
+          "route": "front",
+          "delay": 18,
+          "squad": 3,
+          "interval": 5
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "front",
+          "delay": 20,
+          "squad": 4,
+          "interval": 8,
+          "drop": "inner"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "left",
+          "delay": 30,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "left",
+          "delay": 32,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "drone",
+          "count": 3,
+          "route": "right",
+          "delay": 34,
+          "squad": 3,
+          "interval": 5
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "right",
+          "delay": 40,
+          "squad": 2,
+          "interval": 5,
+          "drop": "wall"
+        }
+      ]
+    },
+    {
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "right",
+          "delay": 6,
+          "squad": 2,
+          "interval": 1,
+          "drop": "outer"
+        },
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "left",
+          "delay": 30,
+          "squad": 2,
+          "interval": 1,
+          "drop": "inner"
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "left",
+          "delay": 2,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "right",
+          "delay": 4,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "left",
+          "delay": 8,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "heavy",
+          "count": 3,
+          "route": "front",
+          "delay": 10,
+          "squad": 1,
+          "interval": 6
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "left",
+          "delay": 12,
+          "squad": 1,
+          "interval": 6
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "right",
+          "delay": 14,
+          "squad": 1,
+          "interval": 6
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "front",
+          "delay": 16,
+          "squad": 2,
+          "interval": 4
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "right",
+          "delay": 18,
+          "squad": 4,
+          "interval": 8,
+          "drop": "inner"
+        },
+        {
+          "type": "drone",
+          "count": 4,
+          "route": "left",
+          "delay": 18,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "front",
+          "delay": 28,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "right",
+          "delay": 30,
+          "squad": 2,
+          "interval": 4
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "left",
+          "delay": 36,
+          "squad": 1,
+          "interval": 8,
+          "drop": "inner"
+        },
+        {
+          "type": "drone",
+          "count": 4,
+          "route": "front",
+          "delay": 36,
+          "squad": 2,
+          "interval": 5
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "front",
+          "delay": 44,
+          "squad": 2,
+          "interval": 4,
+          "drop": "wall"
+        }
+      ]
+    },
+    {
+      "boss": true,
+      "groups": [
+        {
+          "type": "mortar",
+          "count": 2,
+          "route": "left",
+          "delay": 30,
+          "squad": 2,
+          "interval": 1,
+          "drop": "wall"
+        },
+        {
+          "type": "boss",
+          "count": 1,
+          "route": "front",
+          "delay": 6,
+          "squad": 1,
+          "interval": 1
+        },
+        {
+          "type": "boss",
+          "count": 1,
+          "route": "right",
+          "delay": 40,
+          "squad": 1,
+          "interval": 1
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "front",
+          "delay": 0,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "left",
+          "delay": 2,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 12,
+          "route": "right",
+          "delay": 4,
+          "squad": 4,
+          "interval": 7
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "front",
+          "delay": 10,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "heavy",
+          "count": 3,
+          "route": "left",
+          "delay": 12,
+          "squad": 1,
+          "interval": 6
+        },
+        {
+          "type": "heavy",
+          "count": 3,
+          "route": "right",
+          "delay": 16,
+          "squad": 1,
+          "interval": 6
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "left",
+          "delay": 20,
+          "squad": 4,
+          "interval": 8,
+          "drop": "inner"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "front",
+          "delay": 20,
+          "squad": 2,
+          "interval": 4
+        },
+        {
+          "type": "drone",
+          "count": 3,
+          "route": "left",
+          "delay": 24,
+          "squad": 3,
+          "interval": 5
+        },
+        {
+          "type": "grunt",
+          "count": 8,
+          "route": "right",
+          "delay": 30,
+          "squad": 4,
+          "interval": 8,
+          "drop": "wall"
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "left",
+          "delay": 34,
+          "squad": 2,
+          "interval": 4
+        },
+        {
+          "type": "heavy",
+          "count": 2,
+          "route": "front",
+          "delay": 40,
+          "squad": 1,
+          "interval": 8,
+          "drop": "inner"
+        },
+        {
+          "type": "drone",
+          "count": 3,
+          "route": "right",
+          "delay": 44,
+          "squad": 3,
+          "interval": 5
+        },
+        {
+          "type": "assault",
+          "count": 4,
+          "route": "right",
+          "delay": 48,
+          "squad": 2,
+          "interval": 4,
+          "drop": "wall"
+        },
+        {
+          "type": "grunt",
+          "count": 4,
+          "route": "front",
+          "delay": 56,
+          "squad": 4,
+          "interval": 8,
+          "drop": "outer"
+        }
+      ]
+    }
+  ]
+}

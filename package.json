@@ -1,0 +1,43 @@
+{
+  "name": "vertex-runners",
+  "version": "0.1.0",
+  "description": "VERTEX RUNNERS - 高機動FPS",
+  "homepage": "https://tyaso0909.github.io/vertex-runners/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tyaso0909/vertex-runners.git"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:single": "vite build --mode single",
+    "build:artifact": "tsc --noEmit && vite build --mode artifact && node scripts/artifact-page.mjs",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "models": "python assets-src/weapons/build_weapons.py && python assets-src/weapons/build_sights.py && python assets-src/props/build_props.py && python assets-src/props/build_td.py && python assets-src/characters/build_characters.py && python assets-src/characters/build_grunt.py && python assets-src/characters/build_lod.py && npm run map && npm run map:fortress",
+    "map": "tsx scripts/export-map.ts neon && python assets-src/maps/build_map.py",
+    "map:fortress": "tsx scripts/export-map.ts fortress && python assets-src/maps/build_fortress.py"
+  },
+  "keywords": [],
+  "author": "tyaso0909",
+  "license": "MIT",
+  "dependencies": {
+    "lil-gui": "^0.21.0",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "^0.186.0",
+    "gltfpack": "^1.3.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vite-plugin-singlefile": "^2.3.3",
+    "vitest": "^5.0.3"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  }
+}

@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VERTEX RUNNERS</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Noto+Sans+JP:wght@400;600;900&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div id="game"></div>
+
+    <!-- 速さに応じて出るスピードライン -->
+    <div id="speedlines"></div>
+
+    <!-- HUD -->
+    <div id="hud">
+      <div id="crosshair" data-type="cross"><i></i><i></i><i></i><i></i><b class="ring"></b><b class="center"></b></div>
+      <div id="hitmarker"><i></i><i></i><i></i><i></i></div>
+      <div id="ammo-hint"></div>
+      <div id="damage-numbers"></div>
+      <div id="scope">
+        <div class="lens"></div>
+        <div class="reticle"><i class="h"></i><i class="v"></i><b></b></div>
+      </div>
+
+      <div id="weapon">
+        <div class="slots">
+          <span id="slot-0" class="slot"><kbd>1</kbd><b>STRATA</b></span>
+          <span id="slot-1" class="slot"><kbd>2</kbd><b>BREACHER</b></span>
+        </div>
+        <div id="weapon-name">ストラタ</div>
+        <div id="weapon-brief"></div>
+        <div class="ammo"><span id="ammo-mag">30</span><span class="sep">/</span><span id="ammo-res">180</span></div>
+        <div id="mag-bar"></div>
+        <div id="reload-state"></div>
+        <div id="gear">
+          <span class="gear-item" id="grenade-item" title="グレネード"><kbd>G</kbd><span id="grenade-icon"></span><span id="grenade-pips"></span><em id="grenade-det">起爆</em></span>
+          <span class="gear-item" id="melee-ready" title="格闘"><kbd>V</kbd>格闘</span>
+        </div>
+      </div>
+
+      <div id="topbar">
+        <span class="brand">VERTEX RUNNERS</span>
+        <span class="sep">／</span>
+        <span>フェーズ6：消耗戦 ― <span id="topbar-map">ネオン都市</span></span>
+        <span id="fps">-- fps</span>
+      </div>
+
+      <div id="speed">
+        <div><span id="speed-value">0.0</span><span class="unit">m/s</span></div>
+        <div id="state-chip" data-state="air">空中</div>
+      </div>
+
+      <div id="indicators">
+        <div class="ind"><span id="ind-double" class="dot"></span><span>2段ジャンプ</span></div>
+        <div class="ind"><span class="bar"><span id="ind-slide-bar"></span></span><span>スライディング加速</span></div>
+        <div class="ind" id="ind-wall"><span class="bar"><span id="ind-wall-bar"></span></span><span>壁走りの残り時間</span></div>
+      </div>
+
+      <ul id="action-log"></ul>
+
+      <div id="help">
+        <div class="help-title">操作 <span>H で表示切替</span></div>
+        <dl>
+          <dt>W A S D</dt><dd>移動</dd>
+          <dt>マウス</dt><dd>視点</dd>
+          <dt>Shift</dt><dd>ダッシュ（前進中）</dd>
+          <dt>Space</dt><dd>ジャンプ／空中で2段ジャンプ／壁走り中は壁ジャンプ</dd>
+          <dt>C / Ctrl</dt><dd>しゃがみ／ダッシュ中はスライディング</dd>
+          <dt>左クリック</dt><dd>射撃</dd>
+          <dt>右クリック</dt><dd>エイム（押している間）</dd>
+          <dt>R</dt><dd>リロード（タイムアタックでは長押しでやり直し）</dd>
+          <dt>1 / 2 / ホイール</dt><dd>武器の持ち替え</dd>
+          <dt>G</dt><dd>グレネード（押している間は構えて軌道を表示、離すと投げる。サッチェルは置いてあるときにもう一度押すと起爆）</dd>
+          <dt>V</dt><dd>格闘（少し離れた的には踏み込む）</dd>
+          <dt>Q</dt><dd>アビリティ（キャラクターごとの能力）</dd>
+          <dt>X</dt><dd>ブースト（消耗戦。得点でゲージがたまると使える）</dd>
+          <dt>Tab</dt><dd>スコアボード（消耗戦）</dd>
+          <dt>T</dt><dd>スタート地点に戻る</dd>
+          <dt>Esc</dt><dd>一時停止・装備の変更・調整パネル</dd>
+        </dl>
+        <p class="help-tip">消耗戦：敵のパイロット 5 点・歩兵 1 点・アシスト 1 点。先に 300 点のチームの勝ち。Tab でスコアボード</p>
+        <p class="help-tip">射撃場：スタート地点の後ろ（南）。10〜80m の的と動く的がある</p>
+        <p class="help-tip">タイムアタック：R 長押しでスタートからやり直し、T で直前のチェックポイントへ戻る。光る矢印と光の柱が次のチェックポイント</p>
+        <p class="help-tip">ネオン都市：駅（西）の階段で屋上へ上がり、ゲームセンターの屋上へ2段ジャンプ。大通りの上の看板を壁走りしてパチンコ店の屋上へ渡れる。コンテナ置き場では、積んだコンテナの壁を壁走りして山から山へ</p>
+        <p class="help-tip">テスト部屋（Esc で切り替え）：アビリティ訓練場はスタート地点の西</p>
+        <p class="help-tip">壁走り：ダッシュ中にジャンプして、壁に沿うように飛び込む</p>
+        <p class="help-tip">よじ登り：縁に向かって前を押しながらジャンプ</p>
+      </div>
+    </div>
+
+    <div id="drag-hint" class="hidden">この環境ではマウスを画面内に固定できないため、<b>ドラッグで視点を動かします</b>（Esc で一時停止）</div>
+
+    <!-- タイトル画面：背景でネオン都市の上をゆっくり回る -->
+    <div id="title" class="screen">
+      <div class="title-logo">
+        <div class="kicker">HIGH-MOBILITY FPS</div>
+        <h1>VERTEX<br />RUNNERS</h1>
+        <p class="tagline">壁を走れ。空を跳べ。ネオンの街を制圧しろ。</p>
+      </div>
+      <div class="title-press" id="title-press">PRESS ANY KEY</div>
+      <div id="loading">準備中…</div>
+      <p class="title-foot">© VERTEX RUNNERS（仮）　すべてのキャラクター・ロゴはオリジナル</p>
+    </div>
+
+    <!-- メインメニュー -->
+    <div id="mainmenu" class="screen hidden">
+      <div class="mm-layout">
+        <div class="mm-brand">
+          <div class="kicker">MAIN MENU</div>
+          <h1>VERTEX<br />RUNNERS</h1>
+        </div>
+        <nav class="mm-list" id="mm-list">
+          <button type="button" class="mm-item" data-go="attrition">
+            <span class="mm-en">ATTRITION</span><b>消耗戦</b><small>6対6のチーム戦。敵のパイロットと歩兵を倒して、先に 300 点</small>
+          </button>
+          <button type="button" class="mm-item" data-go="timeattack">
+            <span class="mm-en">TIME ATTACK</span><b>タイムアタック</b><small id="mm-ta-best">屋上のコースを駆け抜け、20体のターゲットを壊してゴールまでのタイムを競う</small>
+          </button>
+          <button type="button" class="mm-item" data-go="td">
+            <span class="mm-en">TOWER DEFENSE</span><b>タワーディフェンス</b><small id="mm-td-best">味方のボット3体と、軍事要塞のコアを 10 ウェーブ守る協力戦</small>
+          </button>
+          <button type="button" class="mm-item mm-loadout" data-go="loadouts">
+            <span class="mm-en">LOADOUT</span><b>ロードアウト</b><small id="mm-lo-cur">試合に持っていくキャラクターと武器の組み合わせを、5 つまで保存する</small>
+          </button>
+          <button type="button" class="mm-item" data-go="practice">
+            <span class="mm-en">FREE RUN</span><b>練習</b><small>ネオン都市・テスト部屋を自由に走る。射撃場と、数値の調整パネルつき</small>
+          </button>
+          <button type="button" class="mm-item" data-go="settings">
+            <span class="mm-en">SETTINGS</span><b>設定</b><small>マウス感度・視野角・音量・画質・キー操作</small>
+          </button>
+        </nav>
+        <p class="mm-note">マウスでえらぶ　｜　Esc：タイトルへ</p>
+      </div>
+    </div>
+
+    <!-- キャラクター・装備の選択（試合の前） -->
+    <div id="prepare" class="screen overlay hidden">
+      <div class="panel prep-panel">
+        <header class="prep-head">
+          <button type="button" class="back" id="prep-back">← 戻る</button>
+          <div>
+            <div class="kicker" id="prep-kicker">ATTRITION</div>
+            <h2 id="prep-title">消耗戦</h2>
+          </div>
+          <p class="prep-desc" id="prep-desc"></p>
+        </header>
+        <div class="prep-body">
+          <div class="prep-left">
+            <div id="lo-sum-prep"></div>
+            <div class="charsel-slot charsel-preview" id="charsel-prep"></div>
+          </div>
+          <div class="prep-right">
+            <div class="prep-options" id="prep-options"></div>
+            <div class="prep-start">
+              <button type="button" id="btn-fullscreen" class="primary">全画面で出撃</button>
+              <button type="button" id="btn-start">このまま出撃</button>
+            </div>
+            <p class="note" title="全画面にすると、Ctrl でのしゃがみがブラウザのショートカット（Ctrl+W でタブを閉じる など）と重なりません">しゃがみ：全画面なら Ctrl、ウィンドウのままなら <b>C キー</b></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ロードアウト（メインメニュー・試合の前の画面・練習の一時停止から）。中身は client/ui/loadoutScreen.ts が作る -->
+    <div id="loadouts" class="screen overlay hidden"></div>
+
+    <!-- 設定 -->
+    <div id="settings" class="screen overlay hidden">
+      <div class="panel settings-panel">
+        <header class="prep-head">
+          <button type="button" class="back" id="settings-back">← 戻る</button>
+          <div>
+            <div class="kicker">SETTINGS</div>
+            <h2>設定</h2>
+          </div>
+        </header>
+        <div class="settings-body">
+          <div class="settings-col">
+            <label class="setting">
+              <span>マウス感度</span>
+              <input type="range" id="set-sens" min="0.2" max="3" step="0.05" />
+              <output id="set-sens-v"></output>
+            </label>
+            <label class="setting">
+              <span>視野角（FOV）</span>
+              <input type="range" id="set-fov" min="70" max="110" step="1" />
+              <output id="set-fov-v"></output>
+            </label>
+            <label class="setting">
+              <span>音量</span>
+              <input type="range" id="set-vol" min="0" max="100" step="1" />
+              <output id="set-vol-v"></output>
+            </label>
+            <div class="setting">
+              <span>画質</span>
+              <div id="qual-slot"></div>
+            </div>
+            <button type="button" id="set-reset" class="small-btn">初期値に戻す</button>
+          </div>
+          <div class="settings-col">
+            <div class="prep-label">キー操作</div>
+            <dl class="keys keys-wide">
+              <dt>マウス</dt><dd>視点</dd>
+              <dt>W A S D</dt><dd>移動</dd>
+              <dt>Shift</dt><dd>ダッシュ（前進中）</dd>
+              <dt>Space</dt><dd>ジャンプ・空中で2段ジャンプ・壁走り中は壁ジャンプ</dd>
+              <dt>C / Ctrl</dt><dd>しゃがみ・ダッシュ中はスライディング</dd>
+              <dt>左クリック</dt><dd>射撃</dd>
+              <dt>右クリック</dt><dd>エイム（押している間）</dd>
+              <dt>R</dt><dd>リロード（タイムアタックでは長押しでやり直し）</dd>
+              <dt>1 / 2 / ホイール</dt><dd>武器の持ち替え</dd>
+              <dt>Q</dt><dd>アビリティ（キャラクターごとの能力）</dd>
+              <dt>X</dt><dd>ブースト（消耗戦。得点でゲージがたまると使える）</dd>
+              <dt>G</dt><dd>グレネード（押して構え、離して投げる。サッチェルはもう一度押すと起爆）</dd>
+              <dt>V</dt><dd>格闘（少し離れた相手には踏み込む）</dd>
+              <dt>Tab</dt><dd>スコアボード（消耗戦。押している間）</dd>
+              <dt>T</dt><dd>スタート地点へ（タイムアタックでは直前のチェックポイントへ）</dd>
+              <dt>H</dt><dd>操作の説明の表示・非表示</dd>
+              <dt>Esc</dt><dd>一時停止</dd>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 一時停止画面（練習では右側に調整パネル） -->
+    <div id="pause" class="overlay hidden">
+      <div class="panel pause-panel">
+        <div class="kicker">PAUSED</div>
+        <h2>一時停止中</h2>
+        <div class="pause-buttons">
+          <button id="btn-resume" class="primary">再開</button>
+          <button id="btn-respawn">スタート地点から再開</button>
+          <button id="btn-pause-settings">設定</button>
+          <button id="btn-to-menu">メニューへ戻る</button>
+        </div>
+        <div id="pause-practice">
+          <p class="lead">ロードアウト（キャラクター・武器・カスタマイズ）はここでも変えられます（使用中の枠が変わります）。右の調整パネルで数値を変えると、再開後すぐに反映されます。</p>
+          <div id="map-pause"></div>
+          <div id="lo-sum-pause"></div>
+        </div>
+      </div>
+      <div id="tuning"></div>
+    </div>
+
+    <!-- 読み込み中（試合の準備） -->
+    <div id="busy" class="hidden"><b>準備中…</b><small id="busy-sub"></small></div>
+
+    <div id="toast"></div>
+
+    <div id="webgl-error" class="overlay hidden">
+      <div class="panel small">
+        <h2>3D 描画を開始できませんでした</h2>
+        <p class="lead">お使いのブラウザで WebGL が無効になっている可能性があります。Chrome または Edge の最新版でお試しください。</p>
+      </div>
+    </div>
+
+    <script type="module" src="/client/main.ts"></script>
+  </body>
+</html>
