@@ -9,7 +9,7 @@
  * - タレットの強化：レベル 2 で装甲板と金の山形、レベル 3 で四隅の柱と灯りが付く（組み上がる演出）
  * - 自分が置いたタレットは、輪郭を青く縁取る（どれが自分のものか分かるように）
  * - 設置物（バルーン・ワイヤートラップ・バリケード・ジャンプパッド）は deviceViews.ts
- * 突撃兵・重装兵・歩兵・味方のパイロットは ActorViews（attrition/actorViews.ts）が表示する
+ * 爆弾兵・重装兵・歩兵・味方のパイロットは ActorViews（attrition/actorViews.ts）が表示する
  */
 import * as THREE from 'three';
 import { type TdPlaceable, type TdRoute, type TurretType, isTurretType, tdConfig, tdNum } from '../../config';
@@ -767,7 +767,7 @@ export class TdViews {
           m.renderOrder = 7;
         }
       });
-      // 範囲の輪：タレットは射程・範囲、バルーンは突撃兵を引きつける距離
+      // 範囲の輪：タレットは射程・範囲、バルーンは爆弾兵を引きつける距離
       let R = 0;
       if (isTurretType(type)) {
         const def = tdConfig.TURRETS[type];

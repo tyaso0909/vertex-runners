@@ -49,6 +49,8 @@ export class ActorTemplate {
   private readonly map: THREE.Texture | null = null;
   /** テクスチャの水色の灯りを、チームの色に光らせる（歩兵。マテリアルの名前が "TeamGlowMap"） */
   private readonly teamMap: boolean = false;
+  /** テクスチャの赤い灯り（目など）を光らせる（爆弾兵。マテリアルの名前が "GlowRedMap"） */
+  private readonly redGlow: boolean = false;
 
   /** lod：遠くに見えるとき用の、面を減らしたモデル（骨の名前は model と同じ。build_lod.py で作る） */
   constructor(model: CharacterModel, lod?: CharacterModel) {
@@ -57,6 +59,7 @@ export class ActorTemplate {
     if (skinned) {
       this.map = (skinned.material as THREE.MeshStandardMaterial).map ?? null;
       this.teamMap = (skinned.material as THREE.Material).name === 'TeamGlowMap';
+      this.redGlow = (skinned.material as THREE.Material).name === 'GlowRedMap';
       this.root = skinnedRoot(model, lod);
       return;
     }
@@ -167,7 +170,7 @@ export class ActorTemplate {
       if (!clear && body) {
         sm.material = body;
       } else {
-        const mat = actorMaterial(fx, clear, clear ? null : this.map, this.teamMap);
+        const mat = actorMaterial(fx, clear, clear ? null : this.map, this.teamMap, this.redGlow);
         sm.material = mat;
         materials.push(mat);
         if (!clear) body = mat;
@@ -409,11 +412,12 @@ float fxNoise(vec3 x) {
 `;
 
 /** 1体ごとのマテリアル（頂点の色・発光を使い、演出を足す）。map：取り込んだモデルのテクスチャ */
-function actorMaterial(fx: ActorFx, clear: boolean, map: THREE.Texture | null = null, teamMap = false): THREE.MeshStandardMaterial {
+function actorMaterial(fx: ActorFx, clear: boolean, map: THREE.Texture | null = null, teamMap = false, redGlow = false): THREE.MeshStandardMaterial {
   const mat = new THREE.MeshStandardMaterial({ vertexColors: true, transparent: clear, depthWrite: !clear, map });
   // 取り込んだモデルは面が細かく、縁の光が体じゅうに出て白っぽく見えるので、縁の光を弱める
   mat.defines = { ACTOR_RIM_K: map ? String(RIM_K_TEXTURED) : '1.0' };
   if (teamMap) mat.defines.ACTOR_TEAM_MAP = '';
+  if (redGlow) mat.defines.ACTOR_RED_GLOW = '';
   mat.onBeforeCompile = (sh) => {
     sh.uniforms.uDissolve = fx.dissolve;
     sh.uniforms.uCloak = fx.cloak;
@@ -466,16 +470,22 @@ diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.03), fxTeamMask);
 #else
 float fxTeamMask = 0.0;
 #endif
+#ifdef ACTOR_RED_GLOW
+// テクスチャの赤い灯り（赤が強く、緑と青が弱い所）を、その色で光らせる
+float fxRedMask = smoothstep(0.38, 0.55, diffuseColor.r - max(diffuseColor.g, diffuseColor.b));
+#else
+float fxRedMask = 0.0;
+#endif
 float fxRim = pow(1.0 - clamp(abs(dot(normalize(normal), normalize(vViewPosition))), 0.0, 1.0), 3.5);
 float fxEdge = uDissolve > 0.0 ? 1.0 - smoothstep(0.0, 0.09, fxN - fxTh) : 0.0;
 // 暗い所でも見分けやすいよう、元の色を少しだけ自分で光らせる（弱い補助光の代わり）
 totalEmissiveRadiance = vEm + diffuseColor.rgb * 0.07 + uTeam * (vPbr.z + fxTeamMask) * 4.0 + uTeam * fxRim * uRim * ACTOR_RIM_K + uTeam * fxEdge * 7.0
   + vec3(1.0, 0.92, 0.85) * uHit * 0.9 + vec3(0.55, 0.3, 1.0) * uPhase * (0.6 + fxRim * 2.0)
-  + vec3(0.6, 0.9, 1.0) * uCloak * fxRim * 1.5;`,
+  + vec3(0.6, 0.9, 1.0) * uCloak * fxRim * 1.5 + diffuseColor.rgb * fxRedMask * 6.0;`,
       );
   };
   // 同じ作りのシェーダーを使い回す
-  mat.customProgramCacheKey = () => (clear ? 'actor-clear' : teamMap ? 'actor-tex-team' : map ? 'actor-tex' : 'actor');
+  mat.customProgramCacheKey = () => (clear ? 'actor-clear' : teamMap ? 'actor-tex-team' : redGlow ? 'actor-tex-red' : map ? 'actor-tex' : 'actor');
   return mat;
 }
 

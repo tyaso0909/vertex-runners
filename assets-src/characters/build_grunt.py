@@ -5,8 +5,8 @@
   python assets-src/characters/build_grunt.py            （pip install bpy、Python 3.11）。歩兵・突撃兵・重装兵・迫撃砲兵の4つ
   python assets-src/characters/build_grunt.py heavy      重装兵だけ
   python assets-src/characters/build_grunt.py --preview  確認用の画像を assets-src/characters/preview/<名前>_*.png に描く
-  --legacy  取り込んだモデル（assets-src/characters/models/<名前>.glb）がある兵士（いまは歩兵 grunt・重装兵 heavy）も、昔のモデルを書き出す
-  【フェーズ7】歩兵（grunt）と重装兵（heavy。盾は別のモデル）は取り込んだモデル（build_imported.py）に差し替えた。ふだんはここでは作らない
+  --legacy  取り込んだモデルで作る兵士（歩兵・爆弾兵・重装兵・迫撃砲兵）も、昔のモデルを書き出す
+  【フェーズ7】4つとも取り込んだモデルに差し替えた（歩兵・重装兵・迫撃砲兵は build_imported.py、爆弾兵は build_spider.py）。ふだんはここでは作らない
   （動き build_grunt_animations と手の位置 HEAVY_HAND_TARGETS は build_imported.py からも使う）
 
 書き出すもの：client/assets/characters/grunt.glb・assault.glb・heavy.glb・mortar.glb
@@ -330,13 +330,20 @@ VARIANTS = {
 }
 
 
+# 取り込んだモデル（build_imported.py・build_spider.py）で作る兵士。ここでは作らない
+import json  # noqa: E402
+
+with open(os.path.join(HERE, "models", "rig.json"), encoding="utf-8") as _f:
+    IMPORTED = set(json.load(_f)) | {"assault"}
+
+
 def main():
     args = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else sys.argv[1:]
     only = [a for a in args if not a.startswith("--")]
     for name, (build, heavy) in VARIANTS.items():
         if only and name not in only:
             continue
-        if os.path.exists(os.path.join(HERE, "models", f"{name}.glb")) and "--legacy" not in args:
+        if name in IMPORTED and "--legacy" not in args:
             print(f"{name}：取り込んだモデルを使う（build_imported.py）。ここでは作らない")
             continue
         bpy.ops.wm.read_factory_settings(use_empty=True)

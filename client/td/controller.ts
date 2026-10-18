@@ -91,7 +91,7 @@ const TRACER_TURRET = new THREE.Color('#9fe6ff');
 const WORLD_SPARK = new THREE.Color('#ffb45c');
 const ACTOR_SPARK = new THREE.Color('#ff5a8a');
 const SHIELD_SPARK = new THREE.Color('#ffa04a');
-const ENEMY_LABEL: Record<TdEnemyType, string> = { grunt: '歩兵', assault: '突撃兵', heavy: '重装兵', mortar: '迫撃砲兵', drone: 'ドローン', boss: '大型兵器' };
+const ENEMY_LABEL: Record<TdEnemyType, string> = { grunt: '歩兵', assault: '爆弾兵', heavy: '重装兵', mortar: '迫撃砲兵', drone: 'ドローン', boss: '大型兵器' };
 /** 降下ポッドの降りる場所の種類ごとの色（ミニマップ・知らせ） */
 export const DROP_COLOR: Record<TdDropKind, string> = { outer: '#ff5a3a', wall: '#ffa040', inner: '#ff4a8a' };
 

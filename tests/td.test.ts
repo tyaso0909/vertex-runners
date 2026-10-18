@@ -10,7 +10,7 @@ import { lenH, sub, v3 } from '../shared/math';
 import { buildNavGraph } from '../shared/nav';
 import { Simulation, TICK_DT } from '../shared/simulation';
 import { TdMatch } from '../shared/td/towerDefense';
-import { HEAVY_BODY, TURRET_HEIGHT } from '../shared/td/units';
+import { ASSAULT_BODY, HEAVY_BODY, TURRET_HEIGHT } from '../shared/td/units';
 import { charsCfg, weaponsCfg } from './helpers';
 
 const fortress = buildFortress();
@@ -72,7 +72,7 @@ describe('軍事要塞：マップ', () => {
     for (const r of recs) expect(r.brain!.atCore, `${r.route} の歩兵がコアに着かない`).toBe(true);
   }, 120_000);
 
-  it('ドローンは壁を越えてコアの近くに浮かび、コアを撃つ。突撃兵はコアで自爆する', () => {
+  it('ドローンは壁を越えてコアの近くに浮かび、コアを撃つ。爆弾兵はコアで自爆する', () => {
     const m = makeMatch({ quiet: true, cfg: { INTRO_TIME: 1e9 } });
     m.spawnEnemy('drone', 'left');
     m.spawnEnemy('assault', 'right');
@@ -164,6 +164,16 @@ describe('タワーディフェンス：敵', () => {
     const back = rayVsActor(v3(0, 1.3, 10), v3(0, 0, -1), 50, a);
     expect(back?.head).toBe(true);
     expect(back?.blocked).toBeFalsy();
+  });
+
+  it('爆弾兵（高さ 0.8m のクモ型）：胴に当たり、正面の目が弱点。人の高さには当たらない', () => {
+    const a = { id: 1, team: 1, pos: v3(0, 0, 0), height: 1.8, body: ASSAULT_BODY, yaw: 0 };
+    const body = rayVsActor(v3(0, 0.45, 10), v3(0, 0, -1), 50, a);
+    expect(body).not.toBeNull();
+    expect(body?.head).toBeFalsy();
+    const eye = rayVsActor(v3(0, 0.5, -10), v3(0, 0, 1), 50, a);
+    expect(eye?.head).toBe(true);
+    expect(rayVsActor(v3(0, 1.4, -10), v3(0, 0, 1), 50, a)).toBeNull();
   });
 
   it('第5・第10ウェーブには大型兵器が出る。ウェーブごとに侵入ルートがわかる', () => {

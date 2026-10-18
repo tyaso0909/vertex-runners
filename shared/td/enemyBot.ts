@@ -1,15 +1,15 @@
 /**
- * タワーディフェンスの地上の敵（歩兵・突撃兵・重装兵）の頭。
+ * タワーディフェンスの地上の敵（歩兵・爆弾兵・重装兵）の頭。
  * プレイヤーと同じ入力コマンドで動く（shared/bots の BotBrain をもとにする）。
  *
  * - 侵入ルートの道すじ（TdRouteDef.path）を順にたどり、最後はコアへ向かう（地上の歩けるつながりだけを使う）
  * - 歩兵：近くのプレイヤー・タレットを撃つ。いなければコアを撃つ（仕様 5.3.3）
- * - 突撃兵：足が速く、コアだけを目指す（撃たない。コアに近づくと自爆する。自爆は towerDefense.ts が行う）
+ * - 爆弾兵：足が速く、コアだけを目指す（撃たない。コアに近づくと自爆する。自爆は towerDefense.ts が行う）
  * - 重装兵：遅いが硬い。タレットを優先して撃つ。正面の盾を、撃つ相手に向ける
  * - 迫撃砲兵：降りたら、決められた少し高い所（屋上・砲撃陣地・防壁の上・テラス）へ上り、そこに据えてコアへ迫撃砲を撃ち続ける
  *   （撃つのは towerDefense.ts。頭は、上る・据える・近づいたパイロットを拳銃で撃つ）。上る途中は撃たれても立ち止まらない
- * - 設置物：ダミーバルーンはパイロットと思って撃つ（突撃兵は近くのバルーンへ走って自爆する）。
- *   バリケードに道をふさがれたら、足を止めて壊すまで撃つ（突撃兵はぶつかって自爆する）
+ * - 設置物：ダミーバルーンはパイロットと思って撃つ（爆弾兵は近くのバルーンへ走って自爆する）。
+ *   バリケードに道をふさがれたら、足を止めて壊すまで撃つ（爆弾兵はぶつかって自爆する）
  */
 import type { MovementConfig, WeaponsConfig } from '../../config';
 import type { TdRouteDef } from '../level';
@@ -73,7 +73,7 @@ export class TdEnemyBot extends BotBrain {
   private crouching = false;
   private holdTimer = 0;
   private readonly coreRing: Vec3;
-  /** 突撃兵が引きつけられている囮（いなければ -1） */
+  /** 爆弾兵が引きつけられている囮（いなければ -1） */
   lureId = -1;
   private lureTimer = 0;
   /** 道をふさいでいるバリケード（いなければ -1） */
@@ -102,7 +102,7 @@ export class TdEnemyBot extends BotBrain {
     /** 撃ち合いを始める距離 */
     private readonly engageRange: number,
     private readonly api: TdEnemyApi | null = null,
-    /** 突撃兵が囮に引きつけられる距離 */
+    /** 爆弾兵が囮に引きつけられる距離 */
     private readonly lureRange = 14,
     /** 高い所（防壁の上・屋上）に降りた：階段・飛び降りで、高い足場も通れる */
     high = false,
@@ -224,7 +224,7 @@ export class TdEnemyBot extends BotBrain {
     const c = o ? this.contacts.get(o.id) : undefined;
     const visible = !!(o && c && c.visible);
 
-    // --- 突撃兵：近くの囮へ走る ---
+    // --- 爆弾兵：近くの囮へ走る ---
     let lurePos: Vec3 | null = null;
     if (this.type === 'assault' && this.api) {
       this.lureTimer -= dt;

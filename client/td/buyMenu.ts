@@ -65,7 +65,7 @@ export function itemInfo(id: BuyId): ItemInfo {
   }
   const d = tdConfig.ITEMS[id as TdItemType];
   const stats: Array<[string, string]> = [];
-  if (id === 'decoy') stats.push(['体力', `${tdNum(d, 'HEALTH', 320)}`], ['突撃兵を引きつける', `${tdNum(d, 'ASSAULT_LURE', 14)}m`], ['持てる数', `${d.LIMIT}`]);
+  if (id === 'decoy') stats.push(['体力', `${tdNum(d, 'HEALTH', 320)}`], ['爆弾兵を引きつける', `${tdNum(d, 'ASSAULT_LURE', 14)}m`], ['持てる数', `${d.LIMIT}`]);
   if (id === 'wiretrap') stats.push(['爆発', `${tdNum(d, 'DAMAGE', 130)} × 3（範囲 ${tdNum(d, 'RADIUS', 4.2)}m）`], ['レーザーの幅', `最大 ${(tdNum(d, 'SPAN', 3.6) * 2).toFixed(1)}m`], ['使える回数', '1回'], ['持てる数', `${d.LIMIT}`]);
   if (id === 'barricade') stats.push(['体力', `${tdNum(d, 'HEALTH', 1200)}`], ['幅・高さ', `${tdNum(d, 'WIDTH', 4.2)}m・${tdNum(d, 'HEIGHT', 1.25)}m`], ['銃弾', `${Math.round(tdNum(d, 'ARMOR', 0.5) * 100)}% だけ受ける`], ['持てる数', `${d.LIMIT}`]);
   if (id === 'jumppad') {

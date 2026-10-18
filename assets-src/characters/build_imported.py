@@ -75,6 +75,7 @@ def bones(p):
     （任意）anims："heavy" なら重装兵の動き（盾を構える）。hand_targets で手を置く位置（骨の座標）を変えられる
     （任意）shield：盾のモデル（file）を腰の骨に付ける。center [x, y]・z0・z1 は骨の座標（拡大する前）。テクスチャは体と1枚にまとめる
     （任意）scale：書き出すときの全体の大きさ（骨格ごと拡大する）
+    （任意）src：元のモデルのファイル名（ほかのキャラクターのモデルを使うとき。迫撃砲兵は重装兵の体 heavy.glb を盾なしで使う）
     （任意）team_map：テクスチャの水色の灯りを、ゲームでチームの色に光らせる（マテリアルの名前を "TeamGlowMap" にする）
     （任意）arm_r/arm_fade・leg_r/leg_fade：腕・脚の骨からこの距離より離れた所は胸・腰で動かす（脚の細いキャラクターは小さく）"""
     y0 = 0.0
@@ -110,7 +111,7 @@ def bones(p):
 
 def load_model(cid, p):
     bpy.ops.wm.read_factory_settings(use_empty=True)
-    bpy.ops.import_scene.gltf(filepath=os.path.join(SRC_DIR, f"{cid}.glb"))
+    bpy.ops.import_scene.gltf(filepath=os.path.join(SRC_DIR, p.get("src", f"{cid}.glb")))  # src：ほかのキャラクターのモデルを使う（迫撃砲兵は重装兵の体）
     meshes = [o for o in bpy.data.objects if o.type == "MESH"]
     for o in meshes:
         mw = o.matrix_world.copy()

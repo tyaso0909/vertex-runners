@@ -465,6 +465,9 @@ def main():
     for name, build in builds:
         if only and name not in only:
             continue
+        if name == "tick" and "--legacy" not in args:
+            # ティックは、爆弾兵と同じモデルから build_spider.py で作る（昔の形は --legacy）
+            continue
         bpy.ops.wm.read_factory_settings(use_empty=True)
         build()
         out = os.path.join(OUT_DIR, f"{name}.glb")

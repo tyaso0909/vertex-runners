@@ -181,7 +181,7 @@ export class TdAllyBot extends PilotBot {
   }
 
   /**
-   * コアへ走ってくる突撃兵を止めに行く（コアに近く、まわりに味方がいない突撃兵がいて、自分がいちばん近い味方なら）
+   * コアへ走ってくる爆弾兵を止めに行く（コアに近く、まわりに味方がいない爆弾兵がいて、自分がいちばん近い味方なら）
    */
   private interceptAssault(e: Entity): boolean {
     const api = this.api;
@@ -196,7 +196,7 @@ export class TdAllyBot extends PilotBot {
       if (mates.some((t) => lenH(sub(t.pos, en.pos)) < 18)) continue; // もう誰かが近くにいる
       const d = lenH(sub(en.pos, pos));
       if (d > 50) continue;
-      // 自分よりその突撃兵に近い味方がいれば、その味方に任せる
+      // 自分よりその爆弾兵に近い味方がいれば、その味方に任せる
       if (mates.some((t) => lenH(sub(t.pos, en.pos)) < d - 4)) continue;
       if (d < bd) {
         bd = d;
@@ -204,7 +204,7 @@ export class TdAllyBot extends PilotBot {
       }
     }
     if (!best) return false;
-    // 突撃兵とコアの間に入る
+    // 爆弾兵とコアの間に入る
     const to = sub(core, best.pos);
     const L = lenH(to) || 1;
     this.guard = v3(best.pos.x + (to.x / L) * Math.min(6, L * 0.4), 0, best.pos.z + (to.z / L) * Math.min(6, L * 0.4));

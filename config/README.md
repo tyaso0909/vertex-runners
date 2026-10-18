@@ -372,7 +372,7 @@ BOOSTS には各ブーストを並べる。どれにも NAME（名前）・SHORT
 | 敵 | 体力 | 主な項目 |
 |---|---|---|
 | grunt（歩兵） | 100 | SPEED_MUL 0.85（歩く速さの倍率）、DAMAGE_MUL 0.3（与えるダメージの倍率）、ENGAGE_RANGE 24（撃ち始める距離）、REWARD 8 |
-| assault（突撃兵） | 70 | SPEED_MUL 1.12、EXPLODE_RANGE 4.2（コアの表面からこの距離で自爆）、EXPLODE_CORE_DAMAGE 110（コアへのダメージ）、EXPLODE_RADIUS 5.5・EXPLODE_DAMAGE 70（まわりへの爆風）、REWARD 12 |
+| assault（爆弾兵） | 70 | SPEED_MUL 1.12、EXPLODE_RANGE 4.2（コアの表面からこの距離で自爆）、EXPLODE_CORE_DAMAGE 110（コアへのダメージ）、EXPLODE_RADIUS 5.5・EXPLODE_DAMAGE 70（まわりへの爆風）、REWARD 12 |
 | heavy（重装兵） | 450 | SPEED_MUL 0.62、DAMAGE_MUL 0.32、ENGAGE_RANGE 34、REWARD 35。正面の盾は弾を止め、頭と背中の動力パックが弱点 |
 | mortar（迫撃砲兵） | 150 | SPEED_MUL 0.82、DAMAGE_MUL 0.2（拳銃）、ENGAGE_RANGE 20（拳銃で撃ち返す距離）、PANIC_RANGE 11（据えたあと、この距離にパイロットが来ると砲撃をやめて応戦する）、SETUP_TIME 4（据えてから最初に撃つまで）、FIRE_INTERVAL 8（砲撃の間隔。±15%）、SHELL_CORE_DAMAGE 14（コアへのダメージ）、CORE_REACH 7.5（コアの中心からこの距離までの爆発がコアに届く。5m より遠いと減って、端で半分）、SHELL_RADIUS 4.5・SHELL_DAMAGE 45・SHELL_TURRET_MUL 0.5（まわりの味方への爆風。タレット・設置物への倍率）、SHELL_GRAVITY 18・SHELL_APEX 14・SHELL_APEX_PER_M 0.18（砲弾の重力と、頂点の高さ＝14m＋距離×0.18）、AIM_SIDE 6.5（狙う所：コアの南・北の脇のコアの中心からの距離。真上は連絡橋の屋根）、SPREAD 1.5・SPREAD_PER_M 0.02（ばらつきの半径＝1.5m＋距離×0.02）、MIN_RANGE 25・MAX_RANGE 125（射程）、GIVE_UP 50（降りてからこの秒数たっても据える所に着かなければ、射程の中で経路の点の近くならその場に据える）、REWARD 30 |
 | drone（ドローン） | 160 | SPEED 9（飛ぶ速さ m/s）、DAMAGE_MUL 0.38、FIRE_RANGE 28（コアを撃つ距離）、REWARD 20 |
@@ -393,9 +393,9 @@ BOOSTS には各ブーストを並べる。どれにも NAME（名前）・SHORT
 
 | アイテム | 値段 | 数 | 主な項目 |
 |---|---|---|---|
-| decoy（ダミーバルーン） | 150 | 2 | HEALTH 320、ASSAULT_LURE 14（この距離の突撃兵を引きつけて、囮で自爆させる） |
+| decoy（ダミーバルーン） | 150 | 2 | HEALTH 320、ASSAULT_LURE 14（この距離の爆弾兵を引きつけて、囮で自爆させる） |
 | wiretrap（ワイヤートラップ） | 250 | 2 | SPAN 3.6（中央から左右の機雷までの最大の距離 m）、BEAM_HEIGHT 0.62（レーザーの高さ）、ARM_TIME 1.1（置いてから効くまで 秒）、DAMAGE 130〜MIN_DAMAGE 35（機雷1つの爆発。中心〜端）、RADIUS 4.2、CHAIN_DELAY 0.16（機雷が順に爆発する間隔） |
-| barricade（バリケード） | 200 | 2 | HEALTH 1200、WIDTH 4.2・HEIGHT 1.25（m）、ARMOR 0.5（銃弾のダメージの倍率）、ASSAULT_MUL 2.5（突撃兵の自爆がバリケードに与えるダメージの倍率） |
+| barricade（バリケード） | 200 | 2 | HEALTH 1200、WIDTH 4.2・HEIGHT 1.25（m）、ARMOR 0.5（銃弾のダメージの倍率）、ASSAULT_MUL 2.5（爆弾兵の自爆がバリケードに与えるダメージの倍率） |
 | jumppad（ジャンプパッド） | 120 | 2 | LAUNCH_UP 14.5（上向きの速さ m/s。高さはおよそ LAUNCH_UP² ÷ 36）、LAUNCH_FORWARD 4.5（進む向きへ足す速さ）、RADIUS 1.05（乗ったとみなす範囲）、COOLDOWN 0.8（同じ人を続けて跳ばさない秒） |
 | armor（アーマー） | 200 | 1 | AMOUNT 50（体力の上に付く装甲。ダメージは先に装甲が受ける。ウェーブが終わると無くなる） |
 

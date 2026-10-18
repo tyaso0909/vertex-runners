@@ -16,8 +16,8 @@ ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
 OUT_DIR = os.path.join(ROOT, "client", "assets", "characters")
 WEAPON_DIR = os.path.join(ROOT, "client", "assets", "weapons")
 # 6人のパイロットの遠く用は build_imported.py が作る（取り込んだモデル）
-# 歩兵（grunt）・重装兵（heavy）の遠く用も build_imported.py が作る
-NAMES = ["assault", "mortar"]
+# 兵士の遠く用は build_imported.py（歩兵・重装兵・迫撃砲兵）と build_spider.py（爆弾兵）が作る
+NAMES = []
 WEAPONS = ["ar", "lmg", "smg", "shotgun", "sniper", "pistol", "burst", "psmg", "spinlmg", "autosg", "marksman", "revolver"]
 # 残す面の割合（部品ごと）。小さい部品は形が崩れないように、少し多めに残す
 RATIO = 0.3

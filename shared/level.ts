@@ -208,7 +208,7 @@ export interface TdLevelDef {
   buildArea: { min: Vec3; max: Vec3 };
   /** ドローンがコアを撃つときに浮かぶ場所（コアのまわりの、上が開けた所） */
   droneHover: Vec3[];
-  /** 降下ポッドの降りる場所（歩兵・突撃兵・重装兵・迫撃砲兵はポッドで降りてくる） */
+  /** 降下ポッドの降りる場所（歩兵・爆弾兵・重装兵・迫撃砲兵はポッドで降りてくる） */
   dropZones: TdDropZone[];
   /** 迫撃砲兵が砲撃する所 */
   mortarSpots: TdMortarSpot[];

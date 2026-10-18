@@ -21,6 +21,24 @@ export const HEAVY_BODY: BodyDef = {
 };
 export const HEAVY_HEIGHT = 2.25;
 
+/**
+ * 爆弾兵（敵の種類 assault）：6本脚のクモ型の爆弾ロボット。高さ 0.8m（モデルは build_spider.py）。
+ * 丸い胴と、その下の腹。正面の赤い目が弱点。細い脚には当たらない
+ */
+export const ASSAULT_BODY: BodyDef = {
+  parts: [
+    { kind: 'sphere', c: v3(0, 0.5, 0), r: 0.31 }, // 丸い胴
+    { kind: 'box', c: v3(0, 0.25, 0), half: v3(0.24, 0.1, 0.24) }, // 腹と脚の付け根
+    { kind: 'sphere', c: v3(0, 0.5, -0.27), r: 0.1, crit: true }, // 正面の赤い目（弱点）
+  ],
+  aim: v3(0, 0.45, 0),
+  critAim: v3(0, 0.5, -0.27),
+  radius: 0.7,
+  centerY: 0.4,
+};
+/** 爆弾兵の見た目の高さ（名札の位置など） */
+export const ASSAULT_HEIGHT = 0.8;
+
 /** ドローン：丸い胴・4本の腕と回転翼・正面の目（弱点） */
 export const DRONE_BODY: BodyDef = {
   parts: [

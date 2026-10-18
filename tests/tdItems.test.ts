@@ -94,7 +94,7 @@ describe('購入メニュー：設置物', () => {
     expect(balloon.health).toBeLessThan(balloon.maxHealth - 20);
   });
 
-  it('ダミーバルーン：近くの突撃兵は囮へ走って自爆する（コアは無事）。壊れると無くなる', () => {
+  it('ダミーバルーン：近くの爆弾兵は囮へ走って自爆する（コアは無事）。壊れると無くなる', () => {
     const { m, pid } = makeMatch();
     expect(place(m, pid, 'decoy', 0, 22)).toBe(true);
     m.player!.movement.pos = v3(-30, 0, -30);
@@ -112,7 +112,7 @@ describe('購入メニュー：設置物', () => {
     expect([...m.devices.values()].some((x) => x.type === 'decoy')).toBe(false);
   });
 
-  it('バリケード：道をふさがれた兵士は足を止めて壊そうとする（引っかかりとして消されない）。突撃兵はぶつかって自爆する', () => {
+  it('バリケード：道をふさがれた兵士は足を止めて壊そうとする（引っかかりとして消されない）。爆弾兵はぶつかって自爆する', () => {
     const { m, pid } = makeMatch();
     expect(place(m, pid, 'barricade', 0, 24)).toBe(true);
     m.player!.movement.pos = v3(-30, 0, -30);
@@ -124,7 +124,7 @@ describe('購入メニュー：設置物', () => {
     expect(bar.health).toBeLessThan(bar.maxHealth);
     expect(m.enemies.get(g.id)!.brain!.blockedBy).toBe(bar.id);
     expect(m.stuckRemoved).toBe(0);
-    // 突撃兵
+    // 爆弾兵
     const hp = bar.health;
     const a = grunt(m, 'assault', -1, 32);
     run(m, 8, () => !m.sim.entities.has(a.id));

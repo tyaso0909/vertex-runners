@@ -46,7 +46,7 @@ export const TICK_DT = 1 / TICK_RATE;
 
 /**
  * 参加者の種類：パイロット（プレイヤー・ボット）と、弱い歩兵。
- * タワーディフェンスでは、敵（突撃兵・重装兵・ドローン・大型兵器）と、撃たれる建物（タレット・コア・バリケード）、
+ * タワーディフェンスでは、敵（爆弾兵・重装兵・ドローン・大型兵器）と、撃たれる建物（タレット・コア・バリケード）、
  * 敵をだます囮（ダミーバルーン・消耗戦のホロパイロット）も参加者にする（弾・爆風・倒したときの記録を、プレイヤーと同じ仕組みで扱うため）
  */
 export type EntityKind = 'pilot' | 'grunt' | 'assault' | 'heavy' | 'mortar' | 'drone' | 'boss' | 'turret' | 'core' | 'barricade' | 'decoy' | 'holo';
@@ -1354,7 +1354,7 @@ export class Simulation {
     return id;
   }
 
-  /** 参加者を、倒した記録を残さずにすぐ取り除く（自爆した突撃兵など） */
+  /** 参加者を、倒した記録を残さずにすぐ取り除く（自爆した爆弾兵など） */
   despawn(id: number): void {
     if (!this.entities.has(id)) return;
     this.removeEntity(id);

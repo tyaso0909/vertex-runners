@@ -15,7 +15,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "models": "python assets-src/weapons/build_weapons.py && python assets-src/weapons/build_sights.py && python assets-src/props/build_props.py && python assets-src/props/build_td.py && python assets-src/characters/build_characters.py && python assets-src/characters/build_imported.py && python assets-src/characters/build_grunt.py && python assets-src/characters/build_lod.py && npm run map && npm run map:fortress",
+    "models": "python assets-src/weapons/build_weapons.py && python assets-src/weapons/build_sights.py && python assets-src/props/build_props.py && python assets-src/props/build_td.py && python assets-src/characters/build_characters.py && python assets-src/characters/build_imported.py && python assets-src/characters/build_spider.py && python assets-src/characters/build_grunt.py && python assets-src/characters/build_lod.py && npm run map && npm run map:fortress",
     "map": "tsx scripts/export-map.ts neon && python assets-src/maps/build_map.py",
     "map:fortress": "tsx scripts/export-map.ts fortress && python assets-src/maps/build_fortress.py"
   },

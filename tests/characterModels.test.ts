@@ -66,6 +66,35 @@ describe('重装兵のモデル（取り込んだモデル。体と盾を1つに
   });
 });
 
+describe('爆弾兵・ティック・迫撃砲兵のモデル', () => {
+  it('爆弾兵：クモ型（胴と6本の脚の骨）、動き、赤い灯りを光らせる印', () => {
+    const g = readGlb('assault.glb') as Gltf & { materials?: { name?: string }[] };
+    expect(g.skins?.length).toBe(1);
+    expect(new Set(joints(g))).toEqual(new Set(['hips', 'leg0', 'leg1', 'leg2', 'leg3', 'leg4', 'leg5']));
+    expect((g.animations ?? []).map((a) => a.name).sort()).toEqual(['Death', 'Idle', 'Jump', 'Run']);
+    expect(g.materials?.[0]?.name).toBe('GlowRedMap');
+    expect(tris(g)).toBeLessThanOrEqual(12000);
+    const lod = readGlb('assault_lod.glb');
+    expect(tris(lod)).toBeLessThanOrEqual(2500);
+  });
+
+  it('ティック：胴と6本の脚に分かれていて、目のマテリアル TkRed がある', () => {
+    const b = readFileSync(new URL('../client/assets/props/tick.glb', import.meta.url));
+    const len = new DataView(b.buffer, b.byteOffset, b.byteLength).getUint32(12, true);
+    const g = JSON.parse(new TextDecoder().decode(b.subarray(20, 20 + len))) as Gltf & { materials: { name?: string }[] };
+    const names = g.nodes.map((n) => n.name);
+    for (const n of ['TickBody', 'TickLeg0', 'TickLeg1', 'TickLeg2', 'TickLeg3', 'TickLeg4', 'TickLeg5']) expect(names, n).toContain(n);
+    expect(g.materials.map((m) => m.name)).toContain('TkRed');
+  });
+
+  it('迫撃砲兵：重装兵の体（盾なし・普通の大きさ）に、歩兵の動き', () => {
+    const g = readGlb('mortar.glb');
+    expect(new Set(joints(g))).toEqual(new Set(BONES));
+    expect((g.animations ?? []).map((a) => a.name).sort()).toEqual([...GRUNT_CLIPS].sort());
+    expect(g.nodes.find((n) => n.name === 'Rig')?.scale ?? [1, 1, 1]).toEqual([1, 1, 1]);
+  });
+});
+
 describe('パイロットのモデル（取り込んだモデル）', () => {
   for (const id of CHARACTER_IDS) {
     it(`${id}：骨・動き・テクスチャがそろっていて、面の数が多すぎない`, () => {

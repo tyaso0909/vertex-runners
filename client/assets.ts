@@ -204,7 +204,7 @@ function tuneMaterials(root: THREE.Object3D) {
 
 /** タワーディフェンスのモデル（タワーディフェンスを始めるときに1度だけ読み込む） */
 export interface TdAssets {
-  /** 突撃兵・重装兵（歩兵と同じ骨格） */
+  /** 爆弾兵（クモ型のロボット。胴と6本の脚の骨）・重装兵（歩兵と同じ骨格） */
   assault: CharacterModel;
   heavy: CharacterModel;
   assaultLod: CharacterModel;

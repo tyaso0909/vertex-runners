@@ -7,6 +7,7 @@
  * - 光学迷彩（ほぼ透明）・フェイズシフト（紫の影）・ソナーで見えた敵（壁越しに赤い影）
  * - 頭の上の名札：味方はいつも、敵は見えているときだけ
  */
+import { ASSAULT_HEIGHT } from '../../shared/td/units';
 import { type WeaponCustom, customKey } from '../../shared/weaponCustom';
 import { applyWeaponMods } from '../weapons/weaponMods';
 import * as THREE from 'three';
@@ -25,12 +26,12 @@ export const ENEMY_COLOR = new THREE.Color('#ff3b3b');
 const ALLY_OUTLINE = new THREE.Color('#4cc0ff');
 const ALLY_OUTLINE_OPACITY = 0.7;
 
-/** 人の形で表示する参加者の種類（パイロット・歩兵・突撃兵・重装兵） */
+/** ActorViews で表示する参加者の種類（パイロット・歩兵・重装兵・迫撃砲兵は人の形、爆弾兵はクモ型のロボット） */
 export type ActorKind = 'pilot' | 'grunt' | 'assault' | 'heavy' | 'mortar';
 const ACTOR_KINDS = new Set<string>(['pilot', 'grunt', 'assault', 'heavy', 'mortar', 'holo']);
 
 export interface ActorViewsOptions {
-  /** タワーディフェンス：突撃兵・重装兵のモデルと、名札の出し方（味方は体力・ダウンも出す。壁越しにも見える） */
+  /** タワーディフェンス：爆弾兵・重装兵のモデルと、名札の出し方（味方は体力・ダウンも出す。壁越しにも見える） */
   td?: TdAssets;
 }
 
@@ -350,6 +351,8 @@ class ActorView {
   }
 
   get headY(): number {
+    // 爆弾兵は小さいクモ型のロボット（体の高さは動きのためのもので、見た目よりずっと高い）
+    if (this.kind === 'assault') return ASSAULT_HEIGHT + 0.25;
     return this.height + (this.downedShown ? -0.5 : 0.35);
   }
 
@@ -506,7 +509,8 @@ export class ActorViews {
         const w = activeSlot(e.arsenal).id;
         const slot = activeSlot(e.arsenal);
         const key = `${w}|${customKey(slot.custom)}`;
-        if (key !== v.weaponKey) v.setWeapon(key, this.weaponFor(w, slot.custom));
+        // 爆弾兵（クモ型のロボット）は銃を持たない
+        if (key !== v.weaponKey && v.kind !== 'assault') v.setWeapon(key, this.weaponFor(w, slot.custom));
       }
       for (const ev of e.arsenal.events) {
         if (ev.type === 'shot' && sim.time - v.lastShootAnim > 0.18) {

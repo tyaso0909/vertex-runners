@@ -49,7 +49,7 @@ import { TdEnemyBot, mortarAllow } from './enemyBot';
 import { BossCtl, DroneCtl, rotY } from './flyers';
 import { type RocketBlast, Rockets } from './rockets';
 import { type TdBotApi, TdAllyBot, type TdPhaseName } from './allyBot';
-import { BARRICADE_THICK, BOSS_BODY, BOSS_COLLIDER, BOSS_HEIGHT, CORE_BODY, CORE_HEIGHT, DRONE_BODY, DRONE_HEIGHT, HEAVY_BODY, TURRET_COLLIDER, TURRET_HEIGHT, TURRET_MUZZLE_Y, barricadeBody, turretBody } from './units';
+import { ASSAULT_BODY, BARRICADE_THICK, BOSS_BODY, BOSS_COLLIDER, BOSS_HEIGHT, CORE_BODY, CORE_HEIGHT, DRONE_BODY, DRONE_HEIGHT, HEAVY_BODY, TURRET_COLLIDER, TURRET_HEIGHT, TURRET_MUZZLE_Y, barricadeBody, turretBody } from './units';
 import { DECOY_HEIGHT, DEVICE_HEIGHT, type Footprint, barricadeEnds, footprintOf, footprintsOverlap, forwardOf, segDist2D, segParam2D, trapNodes } from './devices';
 import type { TdEnemyApi } from './enemyBot';
 
@@ -1107,7 +1107,7 @@ export class TdMatch implements TdBotApi {
         damageMul: tdNum(def, 'DAMAGE_MUL', 0.3) * dmg,
         speedMul: tdNum(def, 'SPEED_MUL', 1),
         regen: false,
-        body: type === 'heavy' ? HEAVY_BODY : undefined,
+        body: type === 'heavy' ? HEAVY_BODY : type === 'assault' ? ASSAULT_BODY : undefined,
       });
       const brain = new TdEnemyBot(e.id, this.bw, sim.cfg, sim.wcfg, aim, seed, type, route, this.td.core, this.core.id, tdNum(def, 'ENGAGE_RANGE', 24), this.enemyApi, tdNum(this.cfg.ITEMS.decoy, 'ASSAULT_LURE', 14), high);
       brain.setAim(yaw, 0);
@@ -1983,7 +1983,7 @@ export class TdMatch implements TdBotApi {
   }
 
   // ---------------------------------------------------------------------------
-  // 突撃兵の自爆
+  // 爆弾兵の自爆
   // ---------------------------------------------------------------------------
 
   private stepAssaults() {
