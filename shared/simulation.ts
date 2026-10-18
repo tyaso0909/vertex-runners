@@ -96,6 +96,8 @@ export interface Entity {
   /** ソナーで敵チームに壁越しに見えている残り時間（revealDelay の後から数える） */
   revealed: number;
   revealDelay: number;
+  /** ソラのパッシブ：弾を当てられて、敵チームのミニマップに映っている残り時間 */
+  mapMarked: number;
   /** ダメージを与えてきた相手の番号 → 最後に与えた時刻（アシストの判定） */
   attackers: Map<number, number>;
   /** 倒されたら消える（歩兵）。true なら respawnTimer の後に取り除く */
@@ -172,14 +174,6 @@ export interface SimRules {
   reviveHealth?: number;
   /** 受けるダメージの倍率（タワーディフェンス：タレットの装甲など） */
   damageScale?(victim: Entity, source: DamageSource, attackerId: number): number;
-  /** ソラのパッシブで、倒した敵が弾薬を落とすか（なければ落とす。タワーディフェンスは弾が無限なので落とさない） */
-  ammoDrops?: boolean;
-}
-
-export interface AmmoDrop {
-  id: number;
-  pos: Vec3;
-  time: number;
 }
 
 export type DamageSource = 'turret' | 'grenade' | 'hazard' | 'shot' | 'melee' | 'tick';
@@ -226,11 +220,9 @@ export type SimEvent =
   /** 蘇生された */
   | { type: 'revived'; entityId: number; byId: number }
   | { type: 'turretShot'; targetId: number; from: Vec3; to: Vec3; hit: 'player' | 'shield' | 'world' | 'none'; shieldId?: number }
-  | { type: 'ammoDropSpawn'; drop: AmmoDrop }
-  | { type: 'ammoDropPickup'; dropId: number; entityId: number }
-  | { type: 'ammoDropExpire'; dropId: number };
+  /** ソラのパッシブ：弾を当てた敵がミニマップに映った（映っていなかった敵に、初めて当てたとき） */
+  | { type: 'mapMarked'; entityId: number; byId: number };
 
-const AMMO_DROP_LIFETIME = 20;
 
 export class Simulation {
   readonly world: CollisionWorld;
@@ -242,7 +234,6 @@ export class Simulation {
   /** いまダメージを与えているグレネードの種類（倒した記録に残す） */
   private grenadeCtx: GrenadeId | null = null;
   readonly shields: ShieldWall[] = [];
-  readonly ammoDrops: AmmoDrop[] = [];
   tick = 0;
   /** 経過時間（秒） */
   time = 0;
@@ -251,7 +242,6 @@ export class Simulation {
   private nextId = 1;
   private nextGrenadeId = 1;
   private nextShieldId = 1;
-  private nextDropId = 1;
   /** 取り除いた参加者も含めた、チームと種類（倒した相手の記録用） */
   private readonly registry = new Map<number, { team: number; kind: EntityKind; name: string; character: CharacterId }>();
   /** このティックの、チームごとの「撃てる相手」（敵チームの参加者） */
@@ -307,6 +297,7 @@ export class Simulation {
       shock: 0,
       pulled: 0,
       revealed: 0,
+      mapMarked: 0,
       revealDelay: 0,
       attackers: new Map(),
       removeOnTimer: false,
@@ -459,6 +450,7 @@ export class Simulation {
       e.stagger = Math.max(0, e.stagger - TICK_DT);
       if (e.revealDelay > 0) e.revealDelay = Math.max(0, e.revealDelay - TICK_DT);
       else e.revealed = Math.max(0, e.revealed - TICK_DT);
+      e.mapMarked = Math.max(0, e.mapMarked - TICK_DT);
 
       // ダウンしている間：その場から動けず、撃てない（向きだけ変えられる）。時間が切れると倒れる
       if (e.downed > 0) {
@@ -523,7 +515,7 @@ export class Simulation {
         if (ev.type === 'grenadeDetonate') {
           for (const g of this.grenades) if (g.ownerId === e.id && g.kind === 'satchel') g.detonate = true;
         }
-        if (ev.type === 'targetKilled') this.onKill(e, ev.targetId);
+        if (ev.type === 'targetKilled') this.onKill(ev.targetId);
         if (ev.type === 'actorHit') {
           const v = this.entities.get(ev.actorId);
           if (v) this.damageEntity(v, ev.damage, eye, ev.source, e.id, ev.head);
@@ -550,7 +542,6 @@ export class Simulation {
       }
       if (e.kind === 'pilot') {
         this.checkAmmoStations(e);
-        this.checkAmmoDrops(e);
       }
       this.checkHazards(e);
       if (e.regen) this.regen(e);
@@ -561,7 +552,6 @@ export class Simulation {
     if (this.tick % 4 === 0) this.updateAimedAt();
     this.stepTurrets();
     this.stepGrenades();
-    this.stepAmmoDrops();
   }
 
   private teamOfId(id: number): number {
@@ -687,12 +677,27 @@ export class Simulation {
     e.health = Math.max(0, e.health - toHealth);
     e.sinceDamage = 0;
     if (attackerId >= 0 && attackerId !== e.id) e.attackers.set(attackerId, this.time);
+    if (source === 'shot' && e.health > 0) this.markOnMap(e, attackerId);
     this.events.push({ type: 'playerDamaged', entityId: e.id, amount, from: clone(from), source, attackerId: attackerId >= 0 ? attackerId : undefined, head, armor: amount - toHealth > 0 ? amount - toHealth : undefined });
     if (e.health <= 0) {
       if (this.rules.downOnLethal?.(e)) this.downEntity(e, attackerId);
       else this.killEntity(e, attackerId, source, head);
     }
     return true;
+  }
+
+  /**
+   * ソラのパッシブ：弾を当てた敵を、MARK_TIME 秒のあいだ味方チーム全員のミニマップに映す（当てるたびに延びる）。
+   * 建物（タレット・コア・バリケード）と囮は映さない
+   */
+  private markOnMap(e: Entity, attackerId: number) {
+    if (attackerId < 0 || attackerId === e.id || isStructure(e) || e.kind === 'decoy' || e.kind === 'holo') return;
+    const a = this.entities.get(attackerId);
+    if (!a) return;
+    const t = passiveNum(this.ccfg[a.character].PASSIVE, 'MARK_TIME', 0);
+    if (t <= 0) return;
+    if (e.mapMarked <= 0) this.events.push({ type: 'mapMarked', entityId: e.id, byId: a.id });
+    e.mapMarked = Math.max(e.mapMarked, t);
   }
 
   /** 体力が 0 になったパイロットをダウンさせる（タワーディフェンス） */
@@ -761,6 +766,7 @@ export class Simulation {
 
   private killEntity(e: Entity, attackerId: number, source: DamageSource, head: boolean) {
     e.dead = true;
+    e.mapMarked = 0;
     const rt = this.rules.respawnTime(e);
     e.removeOnTimer = rt === null;
     e.respawnTimer = rt ?? 2.5;
@@ -792,12 +798,6 @@ export class Simulation {
       grenade: source === 'grenade' && this.grenadeCtx ? this.grenadeCtx : undefined,
       head,
     });
-    // ソラのパッシブ：倒した敵が弾薬を落とす
-    if (ke && e.kind !== 'holo' && e.kind !== 'tick' && this.rules.ammoDrops !== false && this.ccfg[ke.character].PASSIVE.AMMO_DROP === true) {
-      const drop: AmmoDrop = { id: this.nextDropId++, pos: v3(e.movement.pos.x, e.movement.pos.y + 0.3, e.movement.pos.z), time: AMMO_DROP_LIFETIME };
-      this.ammoDrops.push(drop);
-      this.events.push({ type: 'ammoDropSpawn', drop });
-    }
   }
 
   private regen(e: Entity) {
@@ -1124,8 +1124,7 @@ export class Simulation {
       hits.push({ targetId: t.id, damage: dmg, killed: r.killed });
       if (r.killed) {
         this.events.push({ type: 'blastKill', ownerId: g.ownerId, targetId: t.id, ttk: r.ttk });
-        const owner = this.entities.get(g.ownerId);
-        if (owner) this.onKill(owner, t.id);
+        this.onKill(t.id);
       }
     }
     const team = g.team ?? this.teamOfId(g.ownerId);
@@ -1266,43 +1265,14 @@ export class Simulation {
   }
 
   // ---------------------------------------------------------------------------
-  // 弾薬（補給所・ソラのパッシブで落ちる弾薬）
+  // 的・弾薬補給所
   // ---------------------------------------------------------------------------
 
-  private onKill(e: Entity, targetId: number) {
+  private onKill(targetId: number) {
     const t = this.targets.find((x) => x.id === targetId);
     if (!t) return;
     // タレットは倒すと少し長く止まる
     if (t.kind === 'turret') t.respawnTimer = this.wcfg.COMMON.TURRET_RESPAWN_TIME;
-    if (this.rules.ammoDrops !== false && this.ccfg[e.character].PASSIVE.AMMO_DROP === true) {
-      const drop: AmmoDrop = { id: this.nextDropId++, pos: v3(t.pos.x, t.pos.y + 0.3, t.pos.z), time: AMMO_DROP_LIFETIME };
-      this.ammoDrops.push(drop);
-      this.events.push({ type: 'ammoDropSpawn', drop });
-    }
-  }
-
-  private checkAmmoDrops(e: Entity) {
-    for (let i = this.ammoDrops.length - 1; i >= 0; i--) {
-      const d = this.ammoDrops[i];
-      const diff = sub(e.movement.pos, d.pos);
-      if (lenH(diff) < 1.5 && Math.abs(diff.y) < 1.8) {
-        for (const s of e.arsenal.slots) s.ammo = slotDef(this.wcfg, s).MAG_SIZE;
-        e.arsenal.reloading = false;
-        this.ammoDrops.splice(i, 1);
-        this.events.push({ type: 'ammoDropPickup', dropId: d.id, entityId: e.id });
-      }
-    }
-  }
-
-  private stepAmmoDrops() {
-    for (let i = this.ammoDrops.length - 1; i >= 0; i--) {
-      const d = this.ammoDrops[i];
-      d.time -= TICK_DT;
-      if (d.time <= 0) {
-        this.ammoDrops.splice(i, 1);
-        this.events.push({ type: 'ammoDropExpire', dropId: d.id });
-      }
-    }
   }
 
   private checkAmmoStations(e: Entity) {

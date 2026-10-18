@@ -183,8 +183,8 @@ export abstract class BotBrain {
       // サプレッサーを付けた武器は、聞こえる距離が 1/3
       const hearRange = slotDef(this.wcfg, activeSlot(o.arsenal)).SUPPRESSED ? 9 : 28;
       const heard = !visible && d < hearRange && o.arsenal.sinceShot < 0.12;
-      // ソナーで見えている（味方のソラが使った）
-      const revealed = o.revealed > 0 && o.revealDelay <= 0;
+      // ソナーで見えている・ミニマップに映っている（どちらも味方のソラ。アビリティとパッシブ）
+      const revealed = (o.revealed > 0 && o.revealDelay <= 0) || o.mapMarked > 0;
       if (!visible && !heard && !revealed && !c0) continue;
       const c = this.contactOf(o);
       if (visible) {

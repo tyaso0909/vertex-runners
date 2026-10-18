@@ -193,6 +193,73 @@ describe('消耗戦：チームと撃ち合い', () => {
   });
 });
 
+describe('ソラのパッシブ：弾を当てた敵をマップに映す', () => {
+  const T = charsCfg().sora.PASSIVE.MARK_TIME as number;
+
+  it('ソラが弾を当てた敵は MARK_TIME 秒のあいだ映り、当てるたびに延びる。切れると消える', () => {
+    const sim = arena();
+    const a = sim.spawnPlayer('A', ['ar', 'smg'], 'sora', { team: 0, pos: v3(0, 0.02, 0) });
+    const b = sim.spawnPlayer('B', ['ar', 'smg'], 'pearl', { team: 1, pos: v3(0, 0.02, -12) });
+    b.maxHealth = b.health = 99999;
+    const ev = run(sim, 40, () => new Map([[a.id, aimAt(sim, a, b, true, sim.tick + 1)]]));
+    expect(T).toBe(4);
+    expect(b.mapMarked).toBeGreaterThan(T - 0.2);
+    // 映ったことの知らせは、映っていなかったときの最初の 1 回だけ
+    expect(ev.filter((e) => e.type === 'mapMarked' && e.entityId === b.id && e.byId === a.id).length).toBe(1);
+    run(sim, Math.round((T - 1) * 60), () => new Map());
+    expect(b.mapMarked).toBeGreaterThan(0);
+    expect(b.mapMarked).toBeLessThan(1.2);
+    run(sim, 90, () => new Map());
+    expect(b.mapMarked).toBe(0);
+  });
+
+  it('ソラ以外が当てても映らない。グレネード・格闘のダメージでも映らない。倒されると消える', () => {
+    const sim = arena();
+    const a = sim.spawnPlayer('A', ['ar', 'smg'], 'pearl', { team: 0, pos: v3(0, 0.02, 0) });
+    const s = sim.spawnPlayer('S', ['ar', 'smg'], 'sora', { team: 0, pos: v3(4, 0.02, 0) });
+    const b = sim.spawnPlayer('B', ['ar', 'smg'], 'pearl', { team: 1, pos: v3(0, 0.02, -12) });
+    b.maxHealth = b.health = 99999;
+    run(sim, 40, () => new Map([[a.id, aimAt(sim, a, b, true, sim.tick + 1)]]));
+    expect(b.health).toBeLessThan(99999);
+    expect(b.mapMarked).toBe(0);
+    sim.damageEntity(b, 10, s.movement.pos, 'grenade', s.id);
+    sim.damageEntity(b, 10, s.movement.pos, 'melee', s.id);
+    expect(b.mapMarked).toBe(0);
+    sim.damageEntity(b, 10, s.movement.pos, 'shot', s.id);
+    expect(b.mapMarked).toBe(T);
+    sim.damageEntity(b, 999999, s.movement.pos, 'shot', s.id);
+    expect(b.dead).toBe(true);
+    expect(b.mapMarked).toBe(0);
+  });
+
+  it('映っている敵は、壁の向こうでもソラの味方のボットに居場所が伝わる', () => {
+    const level = { ...flatLevel((bb) => bb.boxTop(0, 4, -8, 10, 4, 0.6, 'wall')), bounds: { min: v3(-60, -6, -60), max: v3(60, 10, 60) } };
+    const sim = new Simulation(level, { ...DEFAULT_MOVEMENT }, weaponsCfg(), charsCfg());
+    sim.soloTeam = false;
+    sim.rules = { respawnTime: () => 5, spawnInvuln: 0, assistWindow: 5 };
+    const bw = new BotWorld(sim, buildNavGraph(sim.level, DEFAULT_MOVEMENT), 1, v3());
+    const bot = sim.spawnPlayer('bot', ['ar', 'shotgun'], 'pearl', { team: 0, pos: v3(0, 0.02, 0), yaw: 0 });
+    const s = sim.spawnPlayer('S', ['ar', 'smg'], 'sora', { team: 0, pos: v3(20, 0.02, 0) });
+    const b = sim.spawnPlayer('B', ['ar', 'smg'], 'pearl', { team: 1, pos: v3(0, 0.02, -16) });
+    b.maxHealth = b.health = 99999;
+    const brain = new PilotBot(bot.id, bw, sim.cfg, sim.wcfg, DEFAULT_BOTS.hard, sim.ccfg.pearl, 1);
+    const think = (n: number) => {
+      for (let t = 0; t < n; t++) {
+        bw.processPaths();
+        sim.step(new Map([[bot.id, brain.think(bot, 1 / 60)]]));
+      }
+    };
+    think(30);
+    expect(brain.contacts.has(b.id), '壁の向こうは見えない').toBe(false);
+    sim.damageEntity(b, 10, s.movement.pos, 'shot', s.id);
+    think(12);
+    const c = brain.contacts.get(b.id);
+    expect(c).toBeDefined();
+    expect(c!.visible).toBe(false);
+    expect(lenH({ x: c!.pos.x - b.movement.pos.x, y: 0, z: c!.pos.z - b.movement.pos.z })).toBeLessThan(0.5);
+  });
+});
+
 describe('消耗戦：復活', () => {
   it('倒されると5秒後に復活し、直後の2秒は無敵', () => {
     const sim = arena();

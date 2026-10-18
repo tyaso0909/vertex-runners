@@ -401,8 +401,6 @@ export class TdMatch implements TdBotApi {
       pickSpawn: (e) => this.pickSpawn(e),
       spawnInvuln: 2,
       assistWindow: 5,
-      // 弾は無限なので、ソラのパッシブの弾薬は落とさない
-      ammoDrops: false,
       downOnLethal: (e) => e.kind === 'pilot' && e.team === 0,
       downTime: cfg.DOWN_TIME,
       reviveTime: cfg.REVIVE_TIME,

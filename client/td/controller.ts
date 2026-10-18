@@ -747,7 +747,7 @@ export class TdController {
     }
   }
 
-  /** ミニマップ：味方・ダウンした味方・撃った敵・コア・タレット・大型兵器・侵入ルート */
+  /** ミニマップ：味方・ダウンした味方・撃った敵・ソラが弾を当てた敵・コア・タレット・大型兵器・侵入ルート */
   private drawMinimap(routeAlpha: number) {
     const m = this.match;
     const sim = m.sim;
@@ -768,6 +768,7 @@ export class TdController {
         marks.push({ x: pos.x, z: pos.z, kind: 'mortar', pin: true, t });
       }
       else if (e.revealed > 0 && e.revealDelay <= 0) marks.push({ x: pos.x, z: pos.z, kind: 'enemy' });
+      else if (e.mapMarked > 0) marks.push({ x: pos.x, z: pos.z, kind: 'enemyMarked', alpha: Math.min(1, e.mapMarked) });
     }
     for (const d of m.devices.values()) marks.push({ x: d.pos.x, z: d.pos.z, kind: d.ownerId === p.id ? 'deviceMine' : 'device' });
     // 降下予定地点（準備時間中）と、降りてくる降下ポッド（要塞の中・防壁の上に降りるものは、範囲の外でも縁に出す）

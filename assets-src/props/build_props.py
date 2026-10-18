@@ -1,5 +1,5 @@
 """
-射撃場の小物（人型の的、弾薬補給所、グレネード、自動砲台、弾薬パック、注射器、タイムアタックのドローン）を Blender で作り、glTF（.glb）で書き出すスクリプト。
+射撃場の小物（人型の的、弾薬補給所、グレネード、自動砲台、注射器、タイムアタックのドローン）を Blender で作り、glTF（.glb）で書き出すスクリプト。
 
 使い方：
   blender --background --python assets-src/props/build_props.py
@@ -242,20 +242,6 @@ def build_drone():
     return b.finish("drone", pivots=pivots)
 
 
-def build_ammo_drop():
-    """ソラのパッシブで敵が落とす弾薬パック。原点は底の中心"""
-    b = Builder()
-    case = mat("DropCase", (0.16, 0.16, 0.18), metallic=0.5, roughness=0.4)
-    yellow = mat("DropYellow", (1.0, 0.82, 0.12), roughness=0.5)
-    glow = mat("DropGlow", (0.31, 0.89, 1.0), emission=(0.31, 0.89, 1.0), strength=3.0)
-    b.box((0.32, 0.22, 0.14), (0, 0, 0.07), "Drop", case, bevel=0.02)
-    b.box((0.33, 0.06, 0.145), (0, 0, 0.072), "Drop", yellow, bevel=0.01)
-    b.box((0.2, 0.01, 0.03), (0, -0.112, 0.08), "Drop", glow, bevel=0)
-    b.box((0.2, 0.01, 0.03), (0, 0.112, 0.08), "Drop", glow, bevel=0)
-    b.box((0.12, 0.04, 0.02), (0, 0, 0.15), "Drop", case, bevel=0.006)  # 取っ手
-    return b.finish("ammo_drop")
-
-
 def build_syringe():
     """アレックスの注射器。原点は握る位置、針は +Y（three.js では -Z）"""
     b = Builder()
@@ -455,7 +441,6 @@ def main():
         ("ammo_station", build_ammo_station),
         ("grenade", build_grenade),
         ("turret", build_turret),
-        ("ammo_drop", build_ammo_drop),
         ("syringe", build_syringe),
         ("drone", build_drone),
         ("tick", build_tick),

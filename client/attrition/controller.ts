@@ -374,7 +374,7 @@ export class AttritionController {
     }
   }
 
-  /** ミニマップ：範囲の中の味方、撃った敵（少しの間）、ソナーで見えている敵 */
+  /** ミニマップ：範囲の中の味方、撃った敵（少しの間）、ソナーで見えている敵、ソラが弾を当てた敵（パッシブ） */
   private drawMinimap() {
     const m = this.match;
     const sim = m.sim;
@@ -387,6 +387,7 @@ export class AttritionController {
       if (e.team === p.team) {
         if (e.kind !== 'holo' && e.kind !== 'tick') marks.push({ x: pos.x, z: pos.z, kind: e.kind === 'pilot' ? 'ally' : 'allyGrunt', yaw: e.lastCmd.yaw });
       } else if (e.revealed > 0 && e.revealDelay <= 0) marks.push({ x: pos.x, z: pos.z, kind: 'enemy' });
+      else if (e.mapMarked > 0) marks.push({ x: pos.x, z: pos.z, kind: 'enemyMarked', alpha: Math.min(1, e.mapMarked) });
     }
     // マップハック：1.5 秒ごとに映した敵の位置（次に映すまでに薄くなる）
     const mh = this.mapHackMarks;

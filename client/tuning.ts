@@ -42,7 +42,7 @@ const CHAR_NAMES: Record<string, string> = {
   FOOTSTEP_VOLUME: '足音の大きさ',
   REGEN_DELAY: '回復が始まるまで（秒）',
   REGEN_RATE_MUL: '回復速度の倍率',
-  TURRET_REPAIR_MUL: 'タレット修理の倍率',
+  MARK_TIME: 'マップに映す時間（秒）',
   REGEN_RATE: '回復の速さ（/秒）',
   RESPAWN_TIME: '復活までの時間（秒）',
   SELF_GRENADE_DAMAGE_MUL: '自分のグレネードのダメージ倍率',

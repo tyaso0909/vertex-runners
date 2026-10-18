@@ -3,11 +3,9 @@
  * - ワイヤーフック：手元から刺さった点まで伸びるワイヤー
  * - シールドウォール：六角形の模様が流れるエネルギーの壁。弾が当たると波紋が広がる
  * - パルスソナー：広がっていく光の球と、地面を走る輪
- * - 弾薬パック（ソラのパッシブ）：回りながら浮かぶ箱
  */
 import * as THREE from 'three';
 import type { ShieldWall } from '../../shared/abilities';
-import type { AmmoDrop } from '../../shared/simulation';
 
 const v = (p: { x: number; y: number; z: number }) => new THREE.Vector3(p.x, p.y, p.z);
 
@@ -347,62 +345,6 @@ export class SonarWaves {
       const fade = 1 - k * k;
       w.mat.uniforms.uFade.value = fade;
       w.ringMat.opacity = fade;
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
-// 弾薬パック
-// ---------------------------------------------------------------------------
-
-export class AmmoDropViews {
-  readonly group = new THREE.Group();
-  private readonly views = new Map<number, { obj: THREE.Object3D; t: number; base: THREE.Vector3; ring: THREE.Mesh }>();
-  private readonly ringMat = new THREE.MeshBasicMaterial({
-    color: new THREE.Color('#4fe3ff').multiplyScalar(2),
-    transparent: true,
-    opacity: 0.7,
-    depthWrite: false,
-    blending: THREE.AdditiveBlending,
-    toneMapped: false,
-  });
-  private readonly ringGeo = new THREE.RingGeometry(0.32, 0.38, 32).rotateX(-Math.PI / 2);
-
-  constructor(private readonly model: THREE.Object3D) {}
-
-  spawn(d: AmmoDrop, groundY: number): void {
-    const obj = this.model.clone(true);
-    const base = new THREE.Vector3(d.pos.x, groundY, d.pos.z);
-    obj.position.copy(base);
-    const ring = new THREE.Mesh(this.ringGeo, this.ringMat);
-    ring.position.set(d.pos.x, groundY + 0.03, d.pos.z);
-    this.group.add(obj, ring);
-    this.views.set(d.id, { obj, t: 0, base, ring });
-  }
-
-  /** すべて消す（ステージを変えたとき） */
-  clear(): void {
-    for (const id of [...this.views.keys()]) this.remove(id);
-  }
-
-  remove(id: number): void {
-    const vw = this.views.get(id);
-    if (!vw) return;
-    vw.obj.removeFromParent();
-    vw.ring.removeFromParent();
-    this.views.delete(id);
-  }
-
-  update(dt: number, drops: AmmoDrop[]): void {
-    const timeLeft = new Map(drops.map((d) => [d.id, d.time]));
-    for (const [id, vw] of this.views) {
-      vw.t += dt;
-      vw.obj.position.y = vw.base.y + 0.35 + Math.sin(vw.t * 2.5) * 0.06;
-      vw.obj.rotation.y += dt * 1.6;
-      const left = timeLeft.get(id) ?? 0;
-      // 消える前に点滅
-      vw.obj.visible = left > 4 || Math.sin(vw.t * 18) > -0.2;
-      vw.ring.scale.setScalar(1 + 0.15 * Math.sin(vw.t * 4));
     }
   }
 }

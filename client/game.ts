@@ -32,7 +32,7 @@ import { GrenadeView } from './weapons/grenadeView';
 import { blastSpec, gStat, grenadeFuse, grenadePhys, predictPath, targetColliders, throwOrigin, throwVelocity } from '../shared/grenades';
 import type { AbilityEvent } from '../shared/abilities';
 import type { MoveEvent } from '../shared/movement';
-import { AmmoDropViews, GrappleRope, ShieldViews, SonarWaves } from './abilities/abilityFx';
+import { GrappleRope, ShieldViews, SonarWaves } from './abilities/abilityFx';
 import { ScreenFx } from './scene/screenFx';
 import { VitalsHud } from './vitalsHud';
 import { TimeAttackController } from './timeAttack/controller';
@@ -100,7 +100,6 @@ export class Game {
   private readonly rope = new GrappleRope();
   private readonly shieldViews = new ShieldViews();
   private readonly sonar = new SonarWaves();
-  private ammoDropViews: AmmoDropViews | null = null;
   private readonly screenFx = new ScreenFx();
   private assets: Assets | null = null;
   // 画面効果の効き具合（なめらかに変える）
@@ -281,8 +280,6 @@ export class Game {
     this.viewmodel.setArms(assets.fpArms[this.character], assets.syringe);
     this.viewmodel.setParts(assets.weaponParts);
     this.scene.add(this.laserDot);
-    this.ammoDropViews = new AmmoDropViews(assets.ammoDrop);
-    this.scene.add(this.ammoDropViews.group);
     this.grenadeView = new GrenadeView(assets.grenades);
     this.scene.add(this.grenadeView.group);
     this.viewmodel.resize(this.width, this.height);
@@ -405,7 +402,6 @@ export class Game {
       this.input.yaw = this.sim.level.spawnYaw;
       this.input.pitch = 0;
       this.input.resetRecoil();
-      this.ammoDropViews?.clear();
       this.grenadeView?.afterTick(this.sim.grenades, this.sim);
       this.rope.release();
       const keptMap = await this.buildLevelObjects();
@@ -553,7 +549,6 @@ export class Game {
     this.input.pitch = 0;
     this.input.resetRecoil();
     this.acc = 0;
-    this.ammoDropViews?.clear();
     this.grenadeView?.afterTick(this.sim.grenades, this.sim);
     this.rope.release();
     if (this.assets) {
@@ -721,7 +716,6 @@ export class Game {
     this.input.resetRecoil();
     this.acc = 0;
     this.deathDrop = 0;
-    this.ammoDropViews?.clear();
     this.grenadeView?.afterTick(this.sim.grenades, this.sim);
     this.rope.release();
     if (this.assets) {
@@ -938,7 +932,6 @@ export class Game {
       const d = chest.sub(from);
       return from.add(d.multiplyScalar(Math.max(0, 1 - 1.5 / Math.max(1.5, d.length()))));
     });
-    this.ammoDropViews?.update(dt, this.sim.ammoDrops);
     this.ta?.update(dt, this.input.isDown('KeyR'), !this.paused);
     this.at?.update(dt, alpha, this.fpsCam.camera.position, this.paused);
     this.td?.update(dt, alpha, this.fpsCam.camera.position, this.paused);
@@ -1215,21 +1208,6 @@ export class Game {
         }
         break;
       }
-      case 'ammoDropSpawn': {
-        const g = this.sim.world.raycast({ x: e.drop.pos.x, y: e.drop.pos.y + 0.5, z: e.drop.pos.z }, { x: 0, y: -1, z: 0 }, 4);
-        this.ammoDropViews?.spawn(e.drop, g ? g.point.y : e.drop.pos.y - 0.3);
-        break;
-      }
-      case 'ammoDropPickup':
-        this.ammoDropViews?.remove(e.dropId);
-        if (e.entityId === this.player.id) {
-          this.sfx.refill();
-          this.hud.logText('弾薬パックを拾った', 'refill');
-        }
-        break;
-      case 'ammoDropExpire':
-        this.ammoDropViews?.remove(e.dropId);
-        break;
       case 'blastKill':
         if (e.ownerId === this.player.id) {
           this.sfx.kill();

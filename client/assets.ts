@@ -36,7 +36,6 @@ import grenadeUrl from './assets/props/grenade.glb?url';
 import tickUrl from './assets/props/tick.glb?url';
 import ordnanceUrl from './assets/props/ordnance.glb?url';
 import turretUrl from './assets/props/turret.glb?url';
-import ammoDropUrl from './assets/props/ammo_drop.glb?url';
 import syringeUrl from './assets/props/syringe.glb?url';
 import droneUrl from './assets/props/drone.glb?url';
 import meiaUrl from './assets/characters/meia.glb?url';
@@ -157,7 +156,6 @@ export interface Assets {
   /** グレネードの種類ごとのモデル（frag は grenade と同じ） */
   grenades: Record<GrenadeId, THREE.Object3D>;
   turret: THREE.Group;
-  ammoDrop: THREE.Group;
   syringe: THREE.Group;
   /** タイムアタックの浮いているドローン */
   drone: THREE.Group;
@@ -276,7 +274,7 @@ export async function loadAssets(): Promise<Assets> {
   };
   const load = async (url: string) => (await loadGltf(url)).scene;
   const ids = Object.keys(WEAPON_URLS) as WeaponId[];
-  const [weaponScenes, weaponLodScenes, weaponParts, target, ammoStation, grenade, turret, ammoDrop, syringe, drone, chars, arms, gruntGltf, lods, gruntLodGltf, tick, ordnance] = await Promise.all([
+  const [weaponScenes, weaponLodScenes, weaponParts, target, ammoStation, grenade, turret, syringe, drone, chars, arms, gruntGltf, lods, gruntLodGltf, tick, ordnance] = await Promise.all([
     Promise.all(ids.map((id) => load(WEAPON_URLS[id]))),
     Promise.all(ids.map((id) => load(WEAPON_LOD_URLS[id]))),
     load(sightsUrl),
@@ -284,7 +282,6 @@ export async function loadAssets(): Promise<Assets> {
     load(ammoUrl),
     load(grenadeUrl),
     load(turretUrl),
-    load(ammoDropUrl),
     load(syringeUrl),
     load(droneUrl),
     Promise.all(CHARACTER_IDS.map((id) => loadGltf(CHARACTER_URLS[id]))),
@@ -325,5 +322,5 @@ export async function loadAssets(): Promise<Assets> {
   });
   const grunt = { scene: gruntGltf.scene, animations: gruntGltf.animations };
   const gruntLod = { scene: gruntLodGltf, animations: [] };
-  return { weapons, weaponLods, weaponParts, target, ammoStation, grenade, grenades: grenades as Record<GrenadeId, THREE.Object3D>, turret, ammoDrop, syringe, drone, tick, characters, characterLods, grunt, gruntLod, fpArms };
+  return { weapons, weaponLods, weaponParts, target, ammoStation, grenade, grenades: grenades as Record<GrenadeId, THREE.Object3D>, turret, syringe, drone, tick, characters, characterLods, grunt, gruntLod, fpArms };
 }

@@ -174,30 +174,6 @@ describe('ソラ：パルスソナー', () => {
     d.run(Math.ceil((3 + 10 / (cc.sora.ABILITY.WAVE_SPEED as number)) * 60) + 2, {});
     expect(near.revealed).toBe(0);
   });
-
-  it('パッシブ：倒した的が弾薬を落とし、拾うと弾倉が満タンになる', () => {
-    const d = make('sora', (b) => b.target(0, 0, -4, 0));
-    d.run(1, { meleePressed: true });
-    d.run(1, {});
-    expect(d.sim.ammoDrops.length).toBe(0); // 4m は格闘が届かない…ので撃つ
-    d.run(30, { adsHeld: true, pitch: Math.atan2(0.78 - 1.66, 4) });
-    d.run(40, { adsHeld: true, fireHeld: true, pitch: Math.atan2(0.78 - 1.66, 4) });
-    expect(d.sim.ammoDrops.length).toBe(1);
-    const ammoBefore = d.p.arsenal.slots[0].ammo;
-    expect(ammoBefore).toBeLessThan(wc.ar.MAG_SIZE);
-    d.run(120, { moveForward: 1 });
-    expect(d.events).toContain('sim:ammoDropPickup');
-    expect(d.p.arsenal.slots[0].ammo).toBe(wc.ar.MAG_SIZE);
-  });
-
-  it('パッシブ：弾薬を落とさない決まり（タワーディフェンス。弾が無限）では、倒しても落とさない', () => {
-    const d = make('sora', (b) => b.target(0, 0, -4, 0));
-    d.sim.rules = { ...d.sim.rules, ammoDrops: false };
-    d.run(30, { adsHeld: true, pitch: Math.atan2(0.78 - 1.66, 4) });
-    d.run(40, { adsHeld: true, fireHeld: true, pitch: Math.atan2(0.78 - 1.66, 4) });
-    expect(d.events).toContain('targetKilled');
-    expect(d.sim.ammoDrops.length).toBe(0);
-  });
 });
 
 describe('アレックス：オーバードライブ', () => {

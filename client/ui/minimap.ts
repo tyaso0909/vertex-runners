@@ -4,12 +4,13 @@
  * - 地形：ステージの箱を上から見て描いた絵（高い所ほど明るい）を、はじめに1回だけ作っておく
  * - 範囲の中の味方の位置（パイロットは向きの分かる矢印、歩兵は小さな点）。ダウンした味方は赤い印
  * - 銃を撃った敵は、撃った場所に赤い点が少しの間（2.5 秒）出て、だんだん消える（ソナーで見えている敵は、見えている間ずっと）
+ * - ソラのパッシブで映っている敵：赤い点を、ソラの色（黄色）の照準の輪で囲む。動きに合わせて動き、切れる前の 1 秒で薄くなる
  * - タワーディフェンス：コア（範囲の外なら縁に）、タレット、大型兵器、次の・いまのウェーブの侵入ルート（赤い線と、縁の矢印）
  */
 import type { BoxDef, LevelData } from '../../shared/level';
 import { type Vec3, mat3FromEulerYXZ, mat3MulVec, v3 } from '../../shared/math';
 
-export type MarkerKind = 'ally' | 'allyGrunt' | 'allyDowned' | 'enemy' | 'core' | 'turret' | 'turretMine' | 'boss' | 'device' | 'deviceMine' | 'pod' | 'dropZone' | 'mortar';
+export type MarkerKind = 'ally' | 'allyGrunt' | 'allyDowned' | 'enemy' | 'enemyMarked' | 'core' | 'turret' | 'turretMine' | 'boss' | 'device' | 'deviceMine' | 'pod' | 'dropZone' | 'mortar';
 
 export interface MinimapMarker {
   x: number;
@@ -34,6 +35,9 @@ export interface MinimapRoute {
   /** 濃さ（0〜1） */
   alpha: number;
 }
+
+/** ソラのパッシブで映っている敵の輪の色（ソラの色） */
+const MARK_COLOR = '#ffd21f';
 
 /** 撃った敵の印が出ている時間 */
 export const SHOT_MARK_TIME = 2.5;
@@ -369,6 +373,32 @@ export class Minimap {
         ctx.fillStyle = '#fff';
         ctx.fillRect(-1.2, -4, 2.4, 8);
         ctx.fillRect(-4, -1.2, 8, 2.4);
+        break;
+      }
+      case 'enemyMarked': {
+        // ソラのパッシブ：照準の輪（少し回る）と、4 つの刻み
+        ctx.save();
+        ctx.rotate(time * 1.5);
+        ctx.strokeStyle = MARK_COLOR;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(0, 0, 7, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        for (let i = 0; i < 4; i++) {
+          const a = (i * Math.PI) / 2;
+          ctx.moveTo(Math.cos(a) * 7, Math.sin(a) * 7);
+          ctx.lineTo(Math.cos(a) * 10, Math.sin(a) * 10);
+        }
+        ctx.stroke();
+        ctx.restore();
+        ctx.fillStyle = '#ff3b3b';
+        ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(0, 0, 3.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
         break;
       }
       case 'enemy':
