@@ -170,7 +170,7 @@ client/        描画・入力・UI（three.js を使うのはここだけ）
   audio.ts       効果音（Web Audio で合成）
   assets.ts      3D モデルの読み込み
   vitalsHud.ts   HUD（体力・アビリティ・被弾方向・画面の縁の光）
-  assets/        Blender で書き出したモデル（.glb）とキャラクターの顔の絵（portraits/）
+  assets/        Blender で書き出したモデル（.glb）とキャラクターの顔の絵（portraits/）、タイトル・メニューの音楽（audio/）
   characters/    三人称のキャラクター表示（アニメーション・武器を持たせる）
   abilities/     アビリティの見た目（ワイヤー・シールド・ソナー）
   ui/            キャラクター選択・ロードアウト画面（武器の 3D 表示・性能の棒）・ミニマップ
@@ -230,7 +230,11 @@ docs/          フェーズごとの実装報告
 最初の 1 回だけ、リポジトリの **Settings → Pages → Build and deployment → Source** を **GitHub Actions** にしておく。
 プルリクエストでは、型チェックと自動テストだけをする（`.github/workflows/test.yml`）。
 
+## クレジット
+
+- 音楽：魔王魂（タイトル・メニューの曲「cyber38」。`client/assets/audio/maou_bgm_cyber38.mp3`）。ゲームの中ではタイトル画面の下に「音楽：魔王魂」と表記している
+
 ## ライセンス
 
-MIT ライセンス（`LICENSE` を参照）。
+MIT ライセンス（`LICENSE` を参照）。ただし、音楽（`client/assets/audio/`）は魔王魂の作品で、MIT ライセンスの対象ではない。魔王魂の利用規約に従う。
 

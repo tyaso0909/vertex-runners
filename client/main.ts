@@ -35,6 +35,8 @@ import { loadoutCustoms } from '../shared/loadout';
 import { LoadoutScreen, LoadoutSummary, SlotList, setThumbRenderer } from './ui/loadoutScreen';
 import { WeaponPreview } from './ui/weaponPreview';
 import './style.css';
+// タイトル・メニューの音楽（魔王魂「cyber38」。クレジットはタイトル画面の下）
+import menuMusicUrl from './assets/audio/maou_bgm_cyber38.mp3?url';
 
 type Mode = 'attrition' | 'timeattack' | 'td' | 'practice';
 type Screen = 'title' | 'main' | 'prepare' | 'loadouts' | 'settings' | 'pause' | 'playing' | 'result';
@@ -114,6 +116,8 @@ function show(s: Screen) {
   document.body.classList.toggle('in-menu', menu);
   document.body.classList.toggle('menu-open', s !== 'playing');
   document.body.classList.toggle('show-result', s === 'result');
+  // 音楽はタイトル・メニューの間だけ（試合・一時停止・結果の画面では止める）
+  game.sfx.music(menu);
   game.at?.setOverlayVisible(!menu);
   game.td?.setOverlayVisible(!menu);
   if (s === 'main') refreshMain();
@@ -552,6 +556,19 @@ function toast(text: string) {
   clearTimeout(toastTimer);
   toastTimer = window.setTimeout(() => toastEl.classList.remove('show'), 1600);
 }
+
+// 音楽：ブラウザの決まりで、ふつうは最初のクリック・キー操作のあとでないと音を出せない。
+// 操作なしで音を出してよいブラウザでは、タイトルの間から流す
+game.sfx.setMusic(menuMusicUrl);
+const nav = navigator as Navigator & { getAutoplayPolicy?: (type: 'audiocontext') => string };
+if (nav.getAutoplayPolicy?.('audiocontext') === 'allowed') game.sfx.unlock();
+const firstInput = () => {
+  game.sfx.unlock();
+  window.removeEventListener('pointerdown', firstInput, true);
+  window.removeEventListener('keydown', firstInput, true);
+};
+window.addEventListener('pointerdown', firstInput, true);
+window.addEventListener('keydown', firstInput, true);
 
 // シェーダーの準備が終わるまでタイトルから進めない
 const loading = $('loading');

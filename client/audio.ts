@@ -1,6 +1,7 @@
 /**
  * 効果音（Web Audio API で合成。音声ファイルは使わない）。
  * 射撃・グレネード・格闘・足音・アビリティ・被弾の音を作る。
+ * 音楽：タイトル・メニューの曲だけは音声ファイル（mp3）を読み込み、くり返し流す（music()。試合が始まると止める）
  */
 import type { WeaponId } from '../config';
 
@@ -16,6 +17,12 @@ interface ShotVoice {
   tailLen: number;
   gain: number;
 }
+
+/** 音楽の大きさ（効果音に対して。全体の音量にかける） */
+const MUSIC_LEVEL = 0.4;
+/** 音楽が始まるとき・止まるときに、だんだん大きく・小さくする時間（秒） */
+const MUSIC_FADE_IN = 1.5;
+const MUSIC_FADE_OUT = 0.8;
 
 const VOICES: Record<WeaponId, ShotVoice> = {
   ar: { crackFreq: 2200, crackQ: 0.9, crackLen: 0.09, thumpFreq: 120, thumpLen: 0.12, tailLen: 0.35, gain: 0.55 },
@@ -47,11 +54,87 @@ export class Sfx {
   private out: AudioNode | null = null;
   /** 同時に鳴らす 3D の音の数（多すぎると重いので数える） */
   private live3d = 0;
+  /** 音楽：ファイルの場所・読み込んだ音・いま鳴らしている音・流したいか */
+  private musicUrl: string | null = null;
+  private musicBuf: AudioBuffer | null = null;
+  private musicLoading = false;
+  private musicSrc: AudioBufferSourceNode | null = null;
+  private musicFade: GainNode | null = null;
+  private musicBus: GainNode | null = null;
+  private musicWant = false;
 
-  /** 全体の音量（0〜1） */
+  /** 全体の音量（0〜1）。音楽にも効く */
   setVolume(v: number): void {
     this.volume = v;
     if (this.master) this.master.gain.value = v;
+    if (this.musicBus) this.musicBus.gain.value = v * MUSIC_LEVEL;
+  }
+
+  /** 音楽のファイル（読み込みは、音を出せるようになってから） */
+  setMusic(url: string): void {
+    this.musicUrl = url;
+  }
+
+  /**
+   * 音楽を流す・止める。流すときは最初から、だんだん大きく。止めるときはだんだん小さくして止める。
+   * 音を出せるようになる前（タイトルで何も操作していないとき）に流そうとしたら、出せるようになった時に流し始める
+   */
+  music(on: boolean): void {
+    this.musicWant = on;
+    this.syncMusic();
+  }
+
+  private syncMusic() {
+    const ctx = this.ctx;
+    if (!ctx || !this.musicBus) return;
+    if (this.musicWant) {
+      if (this.musicSrc) return;
+      if (!this.musicBuf) {
+        this.loadMusic();
+        return;
+      }
+      if (ctx.state !== 'running') return;
+      const t = ctx.currentTime;
+      const fade = ctx.createGain();
+      fade.gain.setValueAtTime(0, t);
+      fade.gain.linearRampToValueAtTime(1, t + MUSIC_FADE_IN);
+      const src = ctx.createBufferSource();
+      src.buffer = this.musicBuf;
+      src.loop = true;
+      src.connect(fade).connect(this.musicBus);
+      src.start(t);
+      this.musicSrc = src;
+      this.musicFade = fade;
+    } else if (this.musicSrc && this.musicFade) {
+      const t = ctx.currentTime;
+      const g = this.musicFade.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(g.value, t);
+      g.linearRampToValueAtTime(0, t + MUSIC_FADE_OUT);
+      this.musicSrc.stop(t + MUSIC_FADE_OUT + 0.05);
+      this.musicSrc = null;
+      this.musicFade = null;
+    }
+  }
+
+  private loadMusic() {
+    const ctx = this.ctx;
+    if (!ctx || !this.musicUrl || this.musicLoading) return;
+    this.musicLoading = true;
+    fetch(this.musicUrl)
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.arrayBuffer();
+      })
+      .then((b) => ctx.decodeAudioData(b))
+      .then((buf) => {
+        this.musicBuf = buf;
+        this.syncMusic();
+      })
+      .catch((err) => {
+        // 音楽がなくてもゲームは遊べる
+        console.warn('音楽を読み込めなかった', err);
+      });
   }
 
   /** 聞く人（カメラ）の位置と向き。3D の音の左右・距離に使う */
@@ -266,12 +349,19 @@ export class Sfx {
       this.master.gain.value = this.volume;
       const comp = this.ctx.createDynamicsCompressor();
       this.master.connect(comp).connect(this.ctx.destination);
+      // 音楽は効果音の圧縮を通さずに出す（効果音が鳴っても音楽の大きさが揺れないように）
+      this.musicBus = this.ctx.createGain();
+      this.musicBus.gain.value = this.volume * MUSIC_LEVEL;
+      this.musicBus.connect(this.ctx.destination);
+      // 音を出せるようになったら、待っていた音楽を流し始める
+      this.ctx.addEventListener('statechange', () => this.syncMusic());
       const len = this.ctx.sampleRate * 1.5;
       this.noise = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
       const d = this.noise.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     }
-    void this.ctx.resume();
+    void this.ctx.resume().catch(() => undefined);
+    this.syncMusic();
   }
 
   private ready(): this is { ctx: AudioContext; master: GainNode; noise: AudioBuffer } {
