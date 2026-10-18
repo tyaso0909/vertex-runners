@@ -70,6 +70,9 @@ def bones(p):
     """骨の位置（体の中心が Y=0 の座標）。p は rig.json の1人分
     y0: 元のモデルでの体の中心線の前後（-Y が前）  hip/knee/ankle: 高さ  legx/kneex/anklex: 左右の位置
     sh: 肩の高さ  shx/el/wr/tip: 肩・ひじ・手首・指先の左右の位置  slope: 腕の傾き  ay: 腕の前後  chest/neck/headb/top: 胴と頭
+    （任意）wr_y/tip_y：手首・指先の前後の位置（腕が前へ曲がっているモデル）
+    （任意）anims："grunt" なら歩兵の動き（build_grunt.py。待機・走り・射撃・しゃがみ・ジャンプ・倒れる）
+    （任意）team_map：テクスチャの水色の灯りを、ゲームでチームの色に光らせる（マテリアルの名前を "TeamGlowMap" にする）
     （任意）arm_r/arm_fade・leg_r/leg_fade：腕・脚の骨からこの距離より離れた所は胸・腰で動かす（脚の細いキャラクターは小さく）"""
     y0 = 0.0
     ay = p["ay"] - p["y0"]
@@ -87,8 +90,10 @@ def bones(p):
     for s, k in (("L", 1), ("R", -1)):
         J[f"shoulder.{s}"] = ((k * 0.03, ay, p["sh"] + 0.008), (k * (p["shx"] - 0.005), ay, az(p["shx"])), "chest")
         J[f"upperarm.{s}"] = ((k * p["shx"], ay, az(p["shx"])), (k * p["el"], ay, az(p["el"])), f"shoulder.{s}")
-        J[f"forearm.{s}"] = ((k * p["el"], ay, az(p["el"])), (k * p["wr"], ay - 0.005, az(p["wr"])), f"upperarm.{s}")
-        J[f"hand.{s}"] = ((k * p["wr"], ay - 0.005, az(p["wr"])), (k * p["tip"], ay - 0.01, az(p["tip"])), f"forearm.{s}")
+        wy = p["wr_y"] - p["y0"] if "wr_y" in p else ay - 0.005  # 手首・指先の前後（腕が前へ曲がっているモデル用）
+        ty = p["tip_y"] - p["y0"] if "tip_y" in p else ay - 0.01
+        J[f"forearm.{s}"] = ((k * p["el"], ay, az(p["el"])), (k * p["wr"], wy, az(p["wr"])), f"upperarm.{s}")
+        J[f"hand.{s}"] = ((k * p["wr"], wy, az(p["wr"])), (k * p["tip"], ty, az(p["tip"])), f"forearm.{s}")
         J[f"thigh.{s}"] = ((k * p["legx"], y0, p["hip"] - 0.02), (k * p["kneex"], y0 - 0.015, p["knee"]), "hips")
         J[f"shin.{s}"] = ((k * p["kneex"], y0 - 0.015, p["knee"]), (k * p["anklex"], y0 + 0.01, p["ankle"]), f"thigh.{s}")
         J[f"foot.{s}"] = ((k * p["anklex"], y0 + 0.01, p["ankle"]), (k * (p["anklex"] + 0.02), y0 - p["toe"], 0.03), f"shin.{s}")
@@ -451,7 +456,9 @@ def render_preview(cid, rig, path):
         lo.location = loc
         lo.rotation_euler = (Vector((0, 0, 1)) - Vector(loc)).to_track_quat("-Z", "Y").to_euler()
         sc.collection.objects.link(lo)
-    shots = [("Idle", 1), ("Run", 5), ("Run", 14), ("WallRun", 5), ("Jump", 1), ("Slide", 1), ("Death", 31)]
+    names = {t.name for t in rig.animation_data.nla_tracks}
+    shots = [("Idle", 1), ("Run", 5), ("Run", 14), ("WallRun", 5), ("Jump", 1), ("Slide", 1), ("Crouch", 1), ("Shoot", 3), ("Death", 31)]
+    shots = [x for x in shots if x[0] in names][:7]
     files = []
     for i, (tr, f) in enumerate(shots):
         for t in rig.animation_data.nla_tracks:
@@ -497,11 +504,19 @@ def build(cid, p, preview=False, blend=False):
     fix_weights(o, rig, p)
     to_game_rest(o, rig)
     # 動き（全キャラクター共通）
-    bc.build_animations(SimpleNamespace(rig=rig, cid=cid))
+    if p.get("anims") == "grunt":
+        import build_grunt
+
+        build_grunt.build_grunt_animations(SimpleNamespace(rig=rig, cid=cid))
+    else:
+        bc.build_animations(SimpleNamespace(rig=rig, cid=cid))
     bpy.context.scene.render.fps = bc.FPS
     # 近く用・遠く用
     body = decimated_copy(o, TRIS, f"{cid}_body")
-    set_material(body, textured_material(f"{cid}_tex", src_img, TEX))
+    body_mat = textured_material(f"{cid}_tex", src_img, TEX)
+    if p.get("team_map"):
+        body_mat.name = "TeamGlowMap"  # ゲーム側で、テクスチャの水色の所をチームの色に光らせる印
+    set_material(body, body_mat)
     lod = decimated_copy(o, LOD_TRIS, f"{cid}_lod")
     set_material(lod, textured_material(f"{cid}_lodtex", src_img, LOD_TEX))
     for x in (body, lod):

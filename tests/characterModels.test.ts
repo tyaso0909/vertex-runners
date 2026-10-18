@@ -31,6 +31,23 @@ const CLIPS = ['Idle', 'Run', 'WallRun', 'Slide', 'Jump', 'Shoot', 'Ability', 'D
 const tris = (g: Gltf) => g.meshes.reduce((n, m) => n + m.primitives.reduce((k, p) => k + (p.indices !== undefined ? g.accessors[p.indices].count / 3 : 0), 0), 0);
 const joints = (g: Gltf) => (g.skins?.[0]?.joints ?? []).map((i) => g.nodes[i].name ?? '').map((n) => n.replace(/^hand(L|R)$/, 'hand.$1'));
 
+const GRUNT_CLIPS = ['Idle', 'Run', 'Shoot', 'Crouch', 'Jump', 'Death'];
+
+describe('歩兵のモデル（取り込んだモデル。消耗戦・タワーディフェンスの一般兵）', () => {
+  it('骨・歩兵の動き・テクスチャがそろっていて、チームの色に光らせる印がある', () => {
+    const g = readGlb('grunt.glb') as Gltf & { materials?: { name?: string }[] };
+    expect(g.skins?.length).toBe(1);
+    expect(new Set(joints(g))).toEqual(new Set(BONES));
+    expect((g.animations ?? []).map((a) => a.name).sort()).toEqual([...GRUNT_CLIPS].sort());
+    expect(g.images?.length).toBe(1);
+    expect(g.materials?.[0]?.name).toBe('TeamGlowMap');
+    expect(tris(g)).toBeLessThanOrEqual(15000);
+    const lod = readGlb('grunt_lod.glb');
+    expect(new Set(joints(lod))).toEqual(new Set(BONES));
+    expect(tris(lod)).toBeLessThanOrEqual(4000);
+  });
+});
+
 describe('パイロットのモデル（取り込んだモデル）', () => {
   for (const id of CHARACTER_IDS) {
     it(`${id}：骨・動き・テクスチャがそろっていて、面の数が多すぎない`, () => {

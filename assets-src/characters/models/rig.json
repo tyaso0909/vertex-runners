@@ -126,5 +126,30 @@
   "neck": 1.42,
   "headb": 1.5,
   "top": 1.7
+ },
+ "grunt": {
+  "y0": 0.0,
+  "hip": 0.92,
+  "legx": 0.11,
+  "knee": 0.53,
+  "kneex": 0.15,
+  "ankle": 0.12,
+  "anklex": 0.18,
+  "toe": 0.18,
+  "sh": 1.4,
+  "shx": 0.15,
+  "el": 0.36,
+  "wr": 0.57,
+  "tip": 0.68,
+  "slope": -0.09,
+  "ay": 0.0,
+  "wr_y": -0.15,
+  "tip_y": -0.22,
+  "chest": 1.2,
+  "neck": 1.46,
+  "headb": 1.53,
+  "top": 1.7,
+  "anims": "grunt",
+  "team_map": true
  }
 }
