@@ -5,8 +5,9 @@
   python assets-src/characters/build_grunt.py            （pip install bpy、Python 3.11）。歩兵・突撃兵・重装兵・迫撃砲兵の4つ
   python assets-src/characters/build_grunt.py heavy      重装兵だけ
   python assets-src/characters/build_grunt.py --preview  確認用の画像を assets-src/characters/preview/<名前>_*.png に描く
-  --legacy  取り込んだモデル（assets-src/characters/models/<名前>.glb）がある兵士（いまは歩兵 grunt）も、昔のモデルを書き出す
-  【フェーズ7】歩兵（grunt）は取り込んだモデル（build_imported.py）に差し替えた。ふだんはここでは作らない
+  --legacy  取り込んだモデル（assets-src/characters/models/<名前>.glb）がある兵士（いまは歩兵 grunt・重装兵 heavy）も、昔のモデルを書き出す
+  【フェーズ7】歩兵（grunt）と重装兵（heavy。盾は別のモデル）は取り込んだモデル（build_imported.py）に差し替えた。ふだんはここでは作らない
+  （動き build_grunt_animations と手の位置 HEAVY_HAND_TARGETS は build_imported.py からも使う）
 
 書き出すもの：client/assets/characters/grunt.glb・assault.glb・heavy.glb・mortar.glb
   突撃兵（タワーディフェンス）：軽い装備で、胸と背中に光る爆薬。コアに近づくと自爆する

@@ -72,6 +72,9 @@ def bones(p):
     sh: 肩の高さ  shx/el/wr/tip: 肩・ひじ・手首・指先の左右の位置  slope: 腕の傾き  ay: 腕の前後  chest/neck/headb/top: 胴と頭
     （任意）wr_y/tip_y：手首・指先の前後の位置（腕が前へ曲がっているモデル）
     （任意）anims："grunt" なら歩兵の動き（build_grunt.py。待機・走り・射撃・しゃがみ・ジャンプ・倒れる）
+    （任意）anims："heavy" なら重装兵の動き（盾を構える）。hand_targets で手を置く位置（骨の座標）を変えられる
+    （任意）shield：盾のモデル（file）を腰の骨に付ける。center [x, y]・z0・z1 は骨の座標（拡大する前）。テクスチャは体と1枚にまとめる
+    （任意）scale：書き出すときの全体の大きさ（骨格ごと拡大する）
     （任意）team_map：テクスチャの水色の灯りを、ゲームでチームの色に光らせる（マテリアルの名前を "TeamGlowMap" にする）
     （任意）arm_r/arm_fade・leg_r/leg_fade：腕・脚の骨からこの距離より離れた所は胸・腰で動かす（脚の細いキャラクターは小さく）"""
     y0 = 0.0
@@ -374,14 +377,17 @@ def base_image(o):
 
 def textured_material(name, src_img, size):
     """元の色のテクスチャを size に縮めて、新しいマテリアルを作る"""
-    tmp = os.path.join(tempfile.gettempdir(), f"{name}.jpg")
-    img = src_img.copy()
-    img.scale(size, size)
-    img.filepath_raw = tmp
-    img.file_format = "JPEG"
-    img.save(filepath=tmp, quality=90)  # 色の変換をしない保存（save_render は表示用の色の変換がかかる）
-    bpy.data.images.remove(img)
-    im = bpy.data.images.load(tmp)
+    if size is None:
+        im = src_img  # そのまま使う（atlas_material で作った画像）
+    else:
+        tmp = os.path.join(tempfile.gettempdir(), f"{name}.jpg")
+        img = src_img.copy()
+        img.scale(size, size)
+        img.filepath_raw = tmp
+        img.file_format = "JPEG"
+        img.save(filepath=tmp, quality=90)  # 色の変換をしない保存（save_render は表示用の色の変換がかかる）
+        bpy.data.images.remove(img)
+        im = bpy.data.images.load(tmp)
     im.name = name
     im.pack()
     m = bpy.data.materials.new(name)
@@ -394,6 +400,99 @@ def textured_material(name, src_img, size):
     tex.image = im
     nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
     return m
+
+
+def load_prop(path):
+    """小物（盾など）を今のシーンに読み込み、1つの形にまとめて返す"""
+    before = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=path)
+    new = [o for o in bpy.data.objects if o not in before]
+    meshes = [o for o in new if o.type == "MESH"]
+    for o in meshes:
+        mw = o.matrix_world.copy()
+        o.parent = None
+        o.matrix_world = mw
+    for o in new:
+        if o.type != "MESH":
+            bpy.data.objects.remove(o)
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in meshes:
+        o.select_set(True)
+    bpy.context.view_layer.objects.active = meshes[0]
+    if len(meshes) > 1:
+        bpy.ops.object.join()
+    o = bpy.context.view_layer.objects.active
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    bm = bmesh.new()
+    bm.from_mesh(o.data)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0002)
+    bm.to_mesh(o.data)
+    bm.free()
+    return o
+
+
+def place_shield(o, sp):
+    """盾を、骨の座標（拡大する前）の決めた所に置く。sp：center [x, y]・z0・z1（下端と上端の高さ）"""
+    vs = [v.co for v in o.data.vertices]
+    mn = Vector((min(v.x for v in vs), min(v.y for v in vs), min(v.z for v in vs)))
+    mx = Vector((max(v.x for v in vs), max(v.y for v in vs), max(v.z for v in vs)))
+    k = (sp["z1"] - sp["z0"]) / (mx.z - mn.z)
+    o.data.transform(
+        Matrix.Translation((sp["center"][0], sp["center"][1], sp["z0"]))
+        @ Matrix.Scale(k, 4)
+        @ Matrix.Translation((-(mn.x + mx.x) / 2, -(mn.y + mx.y) / 2, -mn.z))
+    )
+    for poly in o.data.polygons:
+        poly.use_smooth = True
+    w = (mx.x - mn.x) * k
+    print(f"  盾：幅 {w:.3f}・高さ {sp['z1'] - sp['z0']:.3f}・厚さ {(mx.y - mn.y) * k:.3f}（骨の座標）")
+
+
+def _pixels(img, w, h):
+    import numpy as np
+
+    c = img.copy()
+    c.scale(w, h)
+    a = np.empty(w * h * 4, dtype=np.float32)
+    c.pixels.foreach_get(a)
+    bpy.data.images.remove(c)
+    return a.reshape(h, w, 4)
+
+
+def atlas_material(name, body_img, prop_img, size):
+    """体（上 2/3）と小物（下 1/3）のテクスチャを1枚にまとめる（幅 size・高さ size×1.5）。
+    UV は remap_uv で合わせる"""
+    import numpy as np
+
+    top = _pixels(body_img, size, size)
+    bottom = _pixels(prop_img, size, size // 2)
+    arr = np.concatenate([bottom, top], axis=0)  # Blender の画像は下の行から
+    im = bpy.data.images.new(name, size, size + size // 2)
+    im.pixels.foreach_set(arr.ravel())
+    tmp = os.path.join(tempfile.gettempdir(), f"{name}.jpg")
+    im.filepath_raw = tmp
+    im.file_format = "JPEG"
+    im.save(filepath=tmp, quality=90)
+    bpy.data.images.remove(im)
+    return textured_material(name, bpy.data.images.load(tmp), None)
+
+
+def remap_uv(obj, v0, v1):
+    """UV の縦を [v0, v1] に縮める（まとめたテクスチャの中の、その形の場所）"""
+    for layer in obj.data.uv_layers:
+        for d in layer.data:
+            d.uv = (d.uv[0], v0 + d.uv[1] * (v1 - v0))
+
+
+def attach_prop(body, prop, bone="hips"):
+    """小物を体に1つの形としてまとめ、すべて bone の骨で動かす（体の重みはそのまま）"""
+    g = prop.vertex_groups.new(name=bone)
+    g.add([v.index for v in prop.data.vertices], 1.0, "REPLACE")
+    bpy.ops.object.select_all(action="DESELECT")
+    prop.select_set(True)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    bpy.ops.object.join()
 
 
 def set_material(obj, mat):
@@ -442,10 +541,11 @@ def render_preview(cid, rig, path):
     w.node_tree.nodes["Background"].inputs["Color"].default_value = (0.55, 0.57, 0.62, 1)
     cd = bpy.data.cameras.new("C")
     cd.type = "ORTHO"
-    cd.ortho_scale = 2.2
+    k = rig.scale[0]  # 大きいキャラクター（重装兵）は引いて撮る
+    cd.ortho_scale = 2.2 * k
     cam = bpy.data.objects.new("C", cd)
     sc.collection.objects.link(cam)
-    cam.location = (-3.2, -5.6, 1.1)
+    cam.location = (-3.2, -5.6, 1.1 * k)
     cam.rotation_euler = (math.radians(88), 0, math.radians(-30))
     sc.camera = cam
     for loc, e in (((2, -3, 3), 500), ((-3, -1, 2), 250), ((0, 3, 2), 300)):
@@ -504,21 +604,43 @@ def build(cid, p, preview=False, blend=False):
     fix_weights(o, rig, p)
     to_game_rest(o, rig)
     # 動き（全キャラクター共通）
-    if p.get("anims") == "grunt":
+    if p.get("anims") in ("grunt", "heavy"):
         import build_grunt
 
-        build_grunt.build_grunt_animations(SimpleNamespace(rig=rig, cid=cid))
+        if "hand_targets" in p:  # 重装兵：盾の取っ手の位置に合わせて手を置く
+            build_grunt.HEAVY_HAND_TARGETS = {k: tuple(tuple(x) for x in v) for k, v in p["hand_targets"].items()}
+        build_grunt.build_grunt_animations(SimpleNamespace(rig=rig, cid=cid), heavy=p["anims"] == "heavy")
     else:
         bc.build_animations(SimpleNamespace(rig=rig, cid=cid))
     bpy.context.scene.render.fps = bc.FPS
     # 近く用・遠く用
     body = decimated_copy(o, TRIS, f"{cid}_body")
-    body_mat = textured_material(f"{cid}_tex", src_img, TEX)
+    lod = decimated_copy(o, LOD_TRIS, f"{cid}_lod")
+    sp = p.get("shield")
+    if sp:
+        # 盾：別のモデルを読み込んで置き、腰の骨で動かす。テクスチャは体と1枚にまとめる（マテリアルを1つにするため）
+        shield = load_prop(os.path.join(SRC_DIR, sp["file"]))
+        shield_img = base_image(shield)
+        place_shield(shield, sp)
+        parts = []
+        for target, tris in ((body, sp.get("tris", 2500)), (lod, sp.get("lod_tris", 500))):
+            sh = decimated_copy(shield, tris, f"{cid}_shield")
+            remap_uv(target, 1 / 3, 1.0)
+            remap_uv(sh, 0.0, 1 / 3)
+            set_material(target, bpy.data.materials.new("tmp"))
+            set_material(sh, bpy.data.materials.new("tmp"))
+            attach_prop(target, sh)
+            parts.append(target)
+        bpy.data.objects.remove(shield)
+        body_mat = atlas_material(f"{cid}_tex", src_img, shield_img, TEX)
+        lod_mat = atlas_material(f"{cid}_lodtex", src_img, shield_img, LOD_TEX)
+    else:
+        body_mat = textured_material(f"{cid}_tex", src_img, TEX)
+        lod_mat = textured_material(f"{cid}_lodtex", src_img, LOD_TEX)
     if p.get("team_map"):
         body_mat.name = "TeamGlowMap"  # ゲーム側で、テクスチャの水色の所をチームの色に光らせる印
     set_material(body, body_mat)
-    lod = decimated_copy(o, LOD_TRIS, f"{cid}_lod")
-    set_material(lod, textured_material(f"{cid}_lodtex", src_img, LOD_TEX))
+    set_material(lod, lod_mat)
     for x in (body, lod):
         x.parent = rig
         for m in list(x.modifiers):
@@ -526,6 +648,8 @@ def build(cid, p, preview=False, blend=False):
         am = x.modifiers.new("Armature", "ARMATURE")
         am.object = rig
     bpy.data.objects.remove(o)
+    # 全体の大きさ（骨と動きは 1.7m の体で作り、書き出すときに骨格ごと拡大する。重装兵は大きい）
+    rig.scale = (p.get("scale", 1.0),) * 3
     os.makedirs(OUT_DIR, exist_ok=True)
     lod.hide_set(True)
     export([rig, body], os.path.join(OUT_DIR, f"{cid}.glb"), True)

@@ -9,7 +9,7 @@ import { CHARACTER_IDS } from '../config';
 const DIR = new URL('../client/assets/characters/', import.meta.url);
 
 interface Gltf {
-  nodes: { name?: string }[];
+  nodes: { name?: string; scale?: number[] }[];
   skins?: { joints: number[] }[];
   meshes: { primitives: { attributes: Record<string, number>; indices?: number }[] }[];
   accessors: { count: number }[];
@@ -43,6 +43,24 @@ describe('歩兵のモデル（取り込んだモデル。消耗戦・タワー�
     expect(g.materials?.[0]?.name).toBe('TeamGlowMap');
     expect(tris(g)).toBeLessThanOrEqual(15000);
     const lod = readGlb('grunt_lod.glb');
+    expect(new Set(joints(lod))).toEqual(new Set(BONES));
+    expect(tris(lod)).toBeLessThanOrEqual(4000);
+  });
+});
+
+describe('重装兵のモデル（取り込んだモデル。体と盾を1つにまとめる）', () => {
+  it('骨・重装兵の動き・1枚のテクスチャがそろっていて、大きさが当たり判定に合う', () => {
+    const g = readGlb('heavy.glb');
+    expect(g.skins?.length).toBe(1);
+    expect(new Set(joints(g))).toEqual(new Set(BONES));
+    expect((g.animations ?? []).map((a) => a.name).sort()).toEqual([...GRUNT_CLIPS].sort());
+    expect(g.images?.length, '体と盾のテクスチャは1枚にまとめる').toBe(1);
+    expect(g.meshes.length).toBe(1);
+    expect(tris(g)).toBeLessThanOrEqual(15000);
+    // 骨格ごと拡大して、高さ約 2.1m（当たり判定の頭 1.96m に合わせる）
+    const rig = g.nodes.find((n) => n.name === 'Rig');
+    expect(rig?.scale?.[1]).toBeCloseTo(2.1 / 1.7, 2);
+    const lod = readGlb('heavy_lod.glb');
     expect(new Set(joints(lod))).toEqual(new Set(BONES));
     expect(tris(lod)).toBeLessThanOrEqual(4000);
   });
