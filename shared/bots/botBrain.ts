@@ -50,6 +50,8 @@ export interface Contact {
 
 /** 見失ったと考えるまでの時間 */
 const FORGET = 12;
+/** パイロットのボットが敵のティックに気づく距離（m） */
+export const TICK_SIGHT_RANGE = 14;
 
 export abstract class BotBrain {
   readonly nav: Navigator;
@@ -75,6 +77,11 @@ export abstract class BotBrain {
   protected aimHead = false;
   /** 最後にダメージを受けた時刻 */
   protected lastHurt = -99;
+  /**
+   * 敵のティック（小さな爆弾ロボット）に気づく距離。0 なら気づかない（歩兵）。
+   * パイロットのボットは、近くで見えたときだけ撃って壊そうとする
+   */
+  protected tickSightRange = TICK_SIGHT_RANGE;
 
   constructor(
     readonly entityId: number,
@@ -149,6 +156,11 @@ export abstract class BotBrain {
         continue;
       }
       const c0 = this.contacts.get(o.id);
+      // ティック：歩兵は近づいてきても気づかない。パイロットも、近くでなければ相手にしない
+      if (o.kind === 'tick' && (this.tickSightRange <= 0 || len(sub(o.movement.pos, e.movement.pos)) > this.tickSightRange)) {
+        if (c0) this.contacts.delete(o.id);
+        continue;
+      }
       if (isPhased(o.ability)) {
         if (c0) c0.visible = false;
         continue;
@@ -181,13 +193,13 @@ export abstract class BotBrain {
         c.lastSeen = this.time;
         c.lastKnown = this.time;
         c.pos = { ...o.movement.pos };
-        this.bw.report(e.team, o);
+        if (o.kind !== 'tick') this.bw.report(e.team, o);
       } else {
         c.visible = false;
         if (heard || revealed) {
           c.lastKnown = this.time;
           c.pos = { ...o.movement.pos };
-          if (revealed) this.bw.report(e.team, o);
+          if (revealed && o.kind !== 'tick') this.bw.report(e.team, o);
         }
       }
     }

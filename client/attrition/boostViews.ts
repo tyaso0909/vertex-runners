@@ -1,6 +1,8 @@
 /**
  * ブーストの見た目（消耗戦）。
- * - ティック：投げると転がって飛び、着地すると 6 本の脚で這う（脚は這った距離で動かす）。赤い目は、狙う相手がいると速く点滅する
+ * - ティック：投げると脚を畳んで飛び（投げた直後は小さく畳まれていて、すぐ元の大きさに開く）、着地すると 6 本の脚で這う
+ *   （脚は這った距離で動かす）。赤い目は、狙う相手がいると速く点滅する。撃たれて壊れると火花が散る
+ *   大きさはタワーディフェンスの爆弾兵と同じ（高さ約 0.8m。模型 tick.glb がその大きさ）
  * - ホロパイロットが消えるとき：青白い光の粒がはじける（ActorViews がちらついて消す）
  * - フェイズリワインド：出た所と着いた所に、紫の光の粒
  * ホロパイロットの体そのものは ActorViews（味方には半分透けた立体映像に見える）、ハードカバーは ShieldViews が描く
@@ -22,8 +24,14 @@ interface TickView {
   cur: THREE.Vector3;
   yaw: number;
   spin: number;
+  /** 出てからの時間（開いて大きくなる演出） */
+  age: number;
   seen: boolean;
 }
+
+/** 投げた直後の大きさと、元の大きさに開くまでの時間 */
+const TICK_START_SCALE = 0.35;
+const TICK_GROW_TIME = 0.35;
 
 export class BoostViews {
   readonly group = new THREE.Group();
@@ -41,7 +49,7 @@ export class BoostViews {
 
   /** シェーダーの準備用 */
   warmObjects(): THREE.Object3D[] {
-    const v = this.make({ id: -1, ownerId: -1, team: 0, pos: { x: 0, y: -500, z: 0 }, vel: { x: 0, y: 0, z: 0 }, state: 'fly', targetId: -1, life: 1, yaw: 0, stride: 0 });
+    const v = this.make({ id: -1, entityId: -1, ownerId: -1, team: 0, pos: { x: 0, y: -500, z: 0 }, vel: { x: 0, y: 0, z: 0 }, state: 'fly', targetId: -1, life: 1, yaw: 0, stride: 0 });
     return [v.root];
   }
 
@@ -66,7 +74,8 @@ export class BoostViews {
     }
     const p = new THREE.Vector3(t.pos.x, t.pos.y, t.pos.z);
     root.position.copy(p);
-    return { root, legs, legRest: legs.map((l) => l.rotation.clone()), eye, prev: p.clone(), cur: p.clone(), yaw: t.yaw, spin: 0, seen: true };
+    root.scale.setScalar(TICK_START_SCALE);
+    return { root, legs, legRest: legs.map((l) => l.rotation.clone()), eye, prev: p.clone(), cur: p.clone(), yaw: t.yaw, spin: 0, age: 0, seen: true };
   }
 
   /** ティックごと：ティックの位置を記録する */
@@ -97,6 +106,12 @@ export class BoostViews {
         this.fx.explode(p, ev.radius * 0.7);
         this.fx.shake(p, 0.5);
         this.effects.impact(p, new THREE.Vector3(0, 1, 0), TICK_SPARK, 1.2);
+      } else if (ev.type === 'tickDestroyed') {
+        // 撃たれて壊れた：爆発はせず、火花と小さな煙
+        const p = new THREE.Vector3(ev.pos.x, ev.pos.y + 0.45, ev.pos.z);
+        this.effects.impact(p, new THREE.Vector3(0, 1, 0), TICK_SPARK, 1.0);
+        this.effects.impact(p.clone().add(new THREE.Vector3(0, 0.2, 0)), new THREE.Vector3(0, 1, 0), new THREE.Color('#ffd27a'), 0.7);
+        this.fx.explode(p, 0.6);
       } else if (ev.type === 'holoGone') {
         const p = new THREE.Vector3(ev.pos.x, ev.pos.y + 1.0, ev.pos.z);
         this.effects.impact(p, new THREE.Vector3(0, 1, 0), HOLO_SPARK, ev.shot ? 1.3 : 0.9);
@@ -115,16 +130,20 @@ export class BoostViews {
       const t = ticks.get(id);
       if (!t) continue;
       v.root.position.lerpVectors(v.prev, v.cur, alpha);
+      v.age += dt;
+      const g = Math.min(1, v.age / TICK_GROW_TIME);
+      v.root.scale.setScalar(TICK_START_SCALE + (1 - TICK_START_SCALE) * (1 - (1 - g) ** 3));
       // 向き：這う向きへ回す。飛んでいる間は転がる
       let d = t.yaw - v.yaw;
       while (d > Math.PI) d -= Math.PI * 2;
       while (d < -Math.PI) d += Math.PI * 2;
       v.yaw += d * Math.min(1, dt * 12);
-      if (t.state === 'fly') v.spin += dt * 9;
+      // 大きいので、ゆっくり転がる
+      if (t.state === 'fly') v.spin += dt * 4.5;
       else v.spin *= Math.exp(-dt * 12);
       v.root.rotation.set(v.spin, v.yaw, 0, 'YXZ');
       // 脚：這った距離で、左右の 3 本ずつを交互に振る
-      const ph = t.stride * 9;
+      const ph = t.stride * 4.5;
       for (let k = 0; k < v.legs.length; k++) {
         const leg = v.legs[k];
         const rest = v.legRest[k];

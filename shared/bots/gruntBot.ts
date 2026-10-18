@@ -25,6 +25,8 @@ export class GruntBot extends BotBrain {
 
   constructor(entityId: number, bw: BotWorld, cfg: MovementConfig, wcfg: WeaponsConfig, skill: AimSkill, seed: number, slot: number) {
     super(entityId, bw, cfg, wcfg, skill, seed);
+    // 歩兵は敵のティックに気づかない（近づいてきても撃たない・逃げない）
+    this.tickSightRange = 0;
     const a = (slot / 4) * Math.PI * 2 + this.rng.range(-0.4, 0.4);
     this.offset = v3(Math.cos(a) * 2.5, 0, Math.sin(a) * 2.5);
     // 地上（低い所）の歩けるつながりだけを使う

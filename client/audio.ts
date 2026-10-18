@@ -1027,6 +1027,12 @@ export class Sfx {
           for (let i = 0; i < 3; i++) this.noiseBurst(t + i * 0.05, 4200, 3, 0.02, 0.12, 'bandpass');
           this.tone(t + 0.15, 1800, 1800, 0.05, 0.06, 'square');
           break;
+        case 'tickBreak':
+          // 撃たれて壊れた：金属が割れる音と、火花
+          this.noiseBurst(t, 2400, 1.2, 0.18, 0.3, 'bandpass');
+          this.tone(t, 900, 140, 0.25, 0.1, 'square');
+          this.noiseBurst(t + 0.04, 6000, 0.8, 0.25, 0.12, 'highpass');
+          break;
         case 'diceroll':
           for (let i = 0; i < 4; i++) this.noiseBurst(t + i * 0.06, 2600, 2.5, 0.03, 0.14, 'bandpass');
           break;

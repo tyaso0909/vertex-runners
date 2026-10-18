@@ -179,7 +179,7 @@ export class AttritionMatch {
 
     sim.soloTeam = false;
     sim.rules = {
-      respawnTime: (e) => (e.kind === 'grunt' || e.kind === 'holo' ? null : cfg.RESPAWN_TIME),
+      respawnTime: (e) => (e.kind === 'grunt' || e.kind === 'holo' || e.kind === 'tick' ? null : cfg.RESPAWN_TIME),
       pickSpawn: (e) => this.pickSpawn(e),
       spawnInvuln: cfg.SPAWN_INVULN,
       assistWindow: cfg.ASSIST_WINDOW,
@@ -498,8 +498,8 @@ export class AttritionMatch {
       this.brains.delete(ev.entityId);
     }
     if (ev.type !== 'kill') return;
-    // ホロパイロットは倒しても得点にならない（撃たれると消えるだけ）
-    if (ev.victimKind === 'holo') return;
+    // ホロパイロット・ティックを倒しても得点にならない（キルフィードにも出さない）
+    if (ev.victimKind === 'holo' || ev.victimKind === 'tick') return;
     if (ev.victimKind === 'pilot') this.boosts.onDeath(ev.victimId);
     if (this.phase === 'ended') return;
     const victim = this.sim.infoOf(ev.victimId);

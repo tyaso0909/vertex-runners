@@ -12,6 +12,12 @@ import { len, lenH, sub, v3 } from '../shared/math';
 import { buildNavGraph } from '../shared/nav';
 import { type Entity, Simulation } from '../shared/simulation';
 import { charsCfg, flatLevel, weaponsCfg } from './helpers';
+import { DEFAULT_BOTS } from '../config';
+import { BotWorld } from '../shared/bots/botWorld';
+import { GruntBot } from '../shared/bots/gruntBot';
+import { PilotBot } from '../shared/bots/pilotBot';
+import { rayVsActor } from '../shared/hitbox';
+import { ASSAULT_BODY, ASSAULT_HEIGHT } from '../shared/td/units';
 
 const B = boostsConfig.BOOSTS;
 
@@ -207,6 +213,106 @@ describe('ブースト：それぞれの効き目', () => {
       expect(en.dead || en.health < 100, `wall ${wallH}m`).toBe(true);
     }
   });
+
+  /** ティックを投げて、着地させる（近くに敵がいないので、その場で待つ） */
+  function landedTicks() {
+    const { sim, bs } = arena();
+    const p = sim.spawnPlayer('P', ['ar', 'smg'], 'meia', { team: 0, pos: v3(0, 0.02, 0) });
+    bs.register(p.id, 'ticks');
+    fill(bs, p.id);
+    for (let t = 0; t < 60 * 2; t++) step(sim, bs, t === 0 ? pressX(sim, p, 0, -0.3) : undefined);
+    expect(bs.ticks.length).toBe(B.ticks.COUNT);
+    for (const t of bs.ticks) expect(t.state).toBe('crawl');
+    return { sim, bs, p };
+  }
+
+  it('ティック：爆弾兵と同じ大きさ・当たり判定の参加者（種類 tick）として出て、ティックと一緒に動く', () => {
+    const { sim, bs } = landedTicks();
+    for (const t of bs.ticks) {
+      const e = sim.entities.get(t.entityId)!;
+      expect(e.kind).toBe('tick');
+      expect(e.team).toBe(0);
+      expect(e.body).toBe(ASSAULT_BODY);
+      expect(e.movement.height).toBeCloseTo(ASSAULT_HEIGHT, 5);
+      expect(e.maxHealth).toBe(B.ticks.HEALTH);
+      expect(lenH(sub(e.movement.pos, t.pos))).toBeLessThan(1e-6);
+      // 横から撃った弾が、体に当たる
+      const a = sim.actorOf(e);
+      const hit = rayVsActor(v3(e.movement.pos.x - 10, e.movement.pos.y + 0.5, e.movement.pos.z), v3(1, 0, 0), 20, a);
+      expect(hit).not.toBeNull();
+    }
+  });
+
+  it('ティック：撃たれて体力が 0 になると、爆発せずに壊れる。得点・キルフィードにはならない', () => {
+    const { sim, bs } = landedTicks();
+    const en = sim.spawnPlayer('E', ['ar', 'smg'], 'pearl', { team: 1, pos: v3(40, 0.02, 40) });
+    const t = bs.ticks[0];
+    const e = sim.entities.get(t.entityId)!;
+    sim.damageEntity(e, 999, en.movement.pos, 'shot', en.id);
+    const evs = step(sim, bs).map((x) => x.type);
+    expect(evs).toContain('tickDestroyed');
+    expect(evs).not.toContain('tickExplode');
+    expect(bs.ticks.find((x) => x.id === t.id)).toBeUndefined();
+    expect(bs.ticks.length).toBe((B.ticks.COUNT as number) - 1);
+    // 体は少しして取り除かれ、復活しない
+    for (let k = 0; k < 60 * 4; k++) step(sim, bs);
+    expect(sim.entities.has(t.entityId)).toBe(false);
+  });
+
+  it('ティック：近くの歩兵を追いかけ、相手が動いても追いついて爆発する', () => {
+    const { sim, bs } = landedTicks();
+    const g = sim.spawnPlayer('G', ['ar', 'smg'], 'pearl', { team: 1, kind: 'grunt', pos: v3(12, 0.02, -10) });
+    g.maxHealth = g.health = 100;
+    let boom = false;
+    for (let t = 0; t < 60 * 8 && !boom; t++) {
+      // 歩兵は横へ歩いて離れていく
+      const c = { ...emptyCommand(sim.tick + 1), yaw: -Math.PI / 2, moveForward: t < 90 ? 1 : 0 };
+      boom = step(sim, bs, new Map([[g.id, c]])).some((x) => x.type === 'tickExplode');
+    }
+    expect(boom).toBe(true);
+    expect(g.movement.pos.x).toBeGreaterThan(14);
+    expect(g.health).toBeLessThan(100);
+  });
+
+  it('歩兵はティックに気づかない（近づいてきても撃たない）。パイロットのボットは近くのティックを撃って壊す', () => {
+    for (const who of ['grunt', 'pilot'] as const) {
+      const { sim, bs, p } = landedTicks();
+      sim.despawn(p.id);
+      const bw = new BotWorld(sim, buildNavGraph(sim.level, DEFAULT_MOVEMENT), 3, v3());
+      const t = bs.ticks[0];
+      const at = v3(t.pos.x, 0.02, t.pos.z - 9);
+      const bot = sim.spawnPlayer('B', ['ar', 'smg'], 'pearl', { team: 1, kind: who === 'grunt' ? 'grunt' : 'pilot', pos: at, yaw: 0 });
+      bot.maxHealth = bot.health = 9999;
+      const brain =
+        who === 'grunt'
+          ? new GruntBot(bot.id, bw, sim.cfg, sim.wcfg, DEFAULT_BOTS.hard, 5, 0)
+          : new PilotBot(bot.id, bw, sim.cfg, sim.wcfg, DEFAULT_BOTS.hard, sim.ccfg.pearl, 5);
+      brain.setAim(0, -0.1);
+      // ティックはこのボットを狙わない（その場にとどまる）
+      for (const x of bs.ticks) (x.ignoreId = bot.id), (x.ignoreT = 99);
+      let shots = 0;
+      let noticed = false;
+      let destroyed = false;
+      for (let k = 0; k < 60 * 4 && !destroyed; k++) {
+        bw.processPaths();
+        const cmds = new Map([[bot.id, brain.think(bot, 1 / 60)]]);
+        bs.preStep(cmds, true);
+        sim.step(cmds);
+        bs.postStep();
+        for (const ev of bot.arsenal.events) if (ev.type === 'shot') shots++;
+        if (brain.contacts.has(t.entityId)) noticed = true;
+        if (bs.events.some((x) => x.type === 'tickDestroyed')) destroyed = true;
+      }
+      if (who === 'grunt') {
+        expect(noticed, '歩兵は気づかない').toBe(false);
+        expect(shots).toBe(0);
+        expect(destroyed).toBe(false);
+      } else {
+        expect(noticed, 'パイロットは気づく').toBe(true);
+        expect(destroyed).toBe(true);
+      }
+    }
+  }, 30000);
 
   it('ダイスロール：ほかの 5 つのどれかが出る', () => {
     const got = new Set<string>();

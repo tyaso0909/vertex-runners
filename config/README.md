@@ -275,7 +275,7 @@
 | メイア（ワイヤーフック） | RANGE 38（届く距離）、PULL_ACCEL 55 / PULL_MAX_SPEED 24（引き寄せの加速と最高速）、MAX_TIME 1.6（最長でこの秒数で離す）、RELEASE_DIST 1.6（刺さった点にこの距離まで近づいたら離す）、TARGET_PULL_DIST 4（的に当てたとき、的を引き寄せる距離）、TARGET_STAGGER_TIME 1.2（的がよろめいて止まる秒数）。外れたときは 1 秒だけ待てば使える | WALLRUN_TIME_MUL 1.3（壁走りできる時間の倍率） |
 | パール（光学迷彩） | DURATION 5（効果時間）。撃つ・殴る・投げると解ける | FOOTSTEP_VOLUME 0.35（足音の大きさ。1 が普通） |
 | ミランダ（シールドウォール） | DURATION 8、WIDTH 4.2 / HEIGHT 2.4（壁の大きさ）、DISTANCE 1.6（どれだけ前に出すか）。敵の弾だけを止め、味方は通り抜けて撃てる。出し直すと前の壁は消える | REGEN_DELAY 3（回復が始まるまで）、REGEN_RATE_MUL 2（回復の速さの倍率） |
-| ソラ（パルスソナー） | RADIUS 40（届く範囲）、REVEAL_TIME 3（壁越しに見える秒数）、WAVE_SPEED 60（波が広がる速さ。遠い敵ほど少し遅れて見つかる） | AMMO_DROP true（倒した敵が弾薬パックを落とす。拾うと両方の武器の弾倉が満タン。20秒で消える）、TURRET_REPAIR_MUL 1.5（TD 用。フェーズ7で使う） |
+| ソラ（パルスソナー） | RADIUS 40（届く範囲）、REVEAL_TIME 3（壁越しに見える秒数）、WAVE_SPEED 60（波が広がる速さ。遠い敵ほど少し遅れて見つかる） | AMMO_DROP true（倒した敵が弾薬パックを落とす。拾うと両方の武器の弾倉が満タン。20秒で消える。TD は弾が無限なので落とさない）、TURRET_REPAIR_MUL 1.5（TD 用） |
 | アレックス（オーバードライブ） | INJECT_TIME 0.4（注射の動作。この間は撃てない）、DURATION 6、SPEED_MUL 1.3（移動速度の倍率）、REGEN_MUL 2（回復の速さの倍率。効果中はダメージを受けた直後でも回復する） | SPEED_MUL 1.1（常に移動速度がこの倍率） |
 | 蘭丸（フェイズシフト） | WINDUP 0.5（準備の秒数）、DURATION 3（無敵の秒数）、SPEED_MUL 1.3（その間の移動速度の倍率）。準備中から終わるまで、撃つ・投げる・殴る・エイム・アビリティはできない | （数値なし）タレットなどに狙われると画面の縁が紫に光り、警告音が鳴る |
 
@@ -331,7 +331,7 @@ BOOSTS には各ブーストを並べる。どれにも NAME（名前）・SHORT
 | holopilot（ホロパイロット） | COST 25、COUNT 5（体数）、DURATION 9（走る秒）、SPREAD 80（前へ扇状に広がる角度） |
 | phaserewind（フェイズリワインド） | COST 25、REWIND 5（何秒前の場所へ戻るか）、TRAVEL 0.6（戻るのにかかる秒） |
 | hardcover（ハードカバー） | COST 30、WIDTH 6・HEIGHT 2.8（盾の大きさ m）、DISTANCE 2.2（立てる距離）、DURATION 20（立っている秒） |
-| ticks（ティック） | COST 35、COUNT 2（数）、THROW_SPEED 13（投げる速さ）、SPEED 7.5（這う速さ m/s）、SEEK_RANGE 28（見えている敵を狙う距離。見えていなくても 12m までは気づく）、TRIGGER 2.2（爆発する近さ）、DAMAGE 110・MIN_DAMAGE 30（真ん中・縁のダメージ）、RADIUS 4（範囲）、LIFE 12（自爆までの秒） |
+| ticks（ティック） | COST 35、COUNT 2（数）、THROW_SPEED 13（投げる速さ）、SPEED 7.5（這う速さ m/s）、SEEK_RANGE 28（見えている敵を狙う距離）、CHASE_RANGE 20（見えていなくても気づいて追いかける距離）、HEALTH 45（体力。撃って壊せる。当たり判定は爆弾兵と同じ）、TRIGGER 2.2（爆発する近さ）、DAMAGE 110・MIN_DAMAGE 30（真ん中・縁のダメージ）、RADIUS 4（範囲）、LIFE 12（自爆までの秒） |
 | diceroll（ダイスロール） | COST 20（ほかの 5 つのどれかが出る） |
 
 ## タワーディフェンス（td.json）

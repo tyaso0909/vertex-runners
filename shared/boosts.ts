@@ -16,6 +16,7 @@ import { type Vec3, add, clone, len, lenH, lookDir, normalize, scale, sub, v3 } 
 import { type Entity, type SimEvent, type Simulation, TICK_DT } from './simulation';
 import { chestOf } from './hitbox';
 import { type BotWorld, Rng } from './bots/botWorld';
+import { ASSAULT_BODY, ASSAULT_HEIGHT } from './td/units';
 
 export interface BoostState {
   boost: BoostId;
@@ -40,6 +41,11 @@ export interface HoloRun {
 /** 投げたティック（クモ型の地雷） */
 export interface TickBot {
   id: number;
+  /**
+   * 撃たれるための参加者（種類 'tick'。タワーディフェンスの爆弾兵と同じ大きさ・当たり判定）。
+   * 位置はこのティックに合わせて毎ティック動かす。撃たれて体力が 0 になると、爆発せずに壊れる
+   */
+  entityId: number;
   ownerId: number;
   team: number;
   pos: Vec3;
@@ -68,6 +74,8 @@ export type BoostEvent =
   | { type: 'tickThrow'; tickId: number; pos: Vec3 }
   | { type: 'tickLand'; tickId: number; pos: Vec3 }
   | { type: 'tickExplode'; tickId: number; pos: Vec3; radius: number }
+  /** 撃たれて壊れた（爆発しない） */
+  | { type: 'tickDestroyed'; tickId: number; pos: Vec3 }
   | { type: 'rewindStart'; pid: number; from: Vec3; to: Vec3 }
   | { type: 'rewindEnd'; pid: number; pos: Vec3 }
   | { type: 'mapHackPulse'; team: number; ids: number[] };
@@ -425,12 +433,28 @@ export class BoostSystem {
     const n = boostNum(def, 'COUNT', 2);
     const speed = boostNum(def, 'THROW_SPEED', 13);
     const eye = sim.eyeOf(e);
+    const a = e.arsenal;
     for (let i = 0; i < n; i++) {
       const yaw = cmd.yaw + (n > 1 ? (i / (n - 1) - 0.5) * 0.28 : 0);
       const dir = lookDir(yaw, Math.min(1.2, cmd.pitch + 0.22));
       const start = add(eye, scale(dir, 0.5));
+      // 撃って壊せるよう、参加者として出す（動きはこのシステムが決める）
+      const ent = sim.spawnPlayer('ティック', [a.slots[0].id, a.slots[1].id], e.character, {
+        team: e.team,
+        kind: 'tick',
+        pos: clone(start),
+        yaw,
+        maxHealth: boostNum(def, 'HEALTH', 45),
+        regen: false,
+        kinematic: true,
+        body: ASSAULT_BODY,
+        height: ASSAULT_HEIGHT,
+        ownerId: e.id,
+      });
+      ent.facing = yaw;
       const tk: TickBot = {
         id: this.nextTickId++,
+        entityId: ent.id,
         ownerId: e.id,
         team: e.team,
         pos: start,
@@ -448,122 +472,146 @@ export class BoostSystem {
 
   private stepTicks(dt: number) {
     const sim = this.sim;
+    for (let i = this.ticks.length - 1; i >= 0; i--) {
+      const t = this.ticks[i];
+      // 撃たれて壊れた（体は少しして、シミュレーションが取り除く）
+      const ent = sim.entities.get(t.entityId);
+      if (!ent || ent.dead) {
+        this.ticks.splice(i, 1);
+        if (ent) this.events.push({ type: 'tickDestroyed', tickId: t.id, pos: clone(t.pos) });
+        continue;
+      }
+      this.stepTick(t, dt);
+      if (this.ticks[i] !== t) continue;
+      // 撃たれるための体を、ティックの位置に合わせる
+      const m = ent.movement;
+      const moved = sub(t.pos, m.pos);
+      m.pos = clone(t.pos);
+      m.vel = t.state === 'fly' ? clone(t.vel) : scale(moved, 1 / dt);
+      m.state = t.state === 'fly' ? 'air' : 'ground';
+      ent.facing = t.yaw;
+      ent.lastCmd.yaw = t.yaw;
+    }
+  }
+
+  /** 1 つのティックを 1 ティック分動かす（爆発・落下で消えたときは this.ticks から取り除く） */
+  private stepTick(t: TickBot, dt: number) {
+    const sim = this.sim;
     const def = this.cfg.BOOSTS.ticks;
     const seek = boostNum(def, 'SEEK_RANGE', 28);
     const trig = boostNum(def, 'TRIGGER', 2.2);
     const speed = boostNum(def, 'SPEED', 7.5);
     const world = sim.world;
-    for (let i = this.ticks.length - 1; i >= 0; i--) {
-      const t = this.ticks[i];
-      t.life -= dt;
-      if (t.ignoreT !== undefined && (t.ignoreT -= dt) <= 0) {
-        t.ignoreT = undefined;
-        t.ignoreId = undefined;
+    const remove = () => {
+      const k = this.ticks.indexOf(t);
+      if (k >= 0) this.ticks.splice(k, 1);
+      sim.despawn(t.entityId);
+    };
+    t.life -= dt;
+    if (t.ignoreT !== undefined && (t.ignoreT -= dt) <= 0) {
+      t.ignoreT = undefined;
+      t.ignoreId = undefined;
+    }
+    // 狙う相手（0.25 秒ごとに見直す。見えているいちばん近い敵）
+    if (t.state === 'crawl' && (t.targetId < 0 || Math.floor((t.life + dt) * 4) !== Math.floor(t.life * 4))) t.targetId = this.tickTarget(t, seek);
+    const target = t.targetId >= 0 ? sim.entities.get(t.targetId) : undefined;
+    if (target && (target.dead || target.downed > 0)) t.targetId = -1;
+    // 近くに敵がいれば爆発
+    let boom = t.life <= 0;
+    for (const o of sim.entities.values()) {
+      if (boom) break;
+      if (o.team === t.team || o.dead || !this.tickCanHit(o)) continue;
+      if (len(sub(chestOf(sim.actorOf(o)), t.pos)) < (t.state === 'fly' ? 1.2 : trig)) boom = true;
+    }
+    if (boom) {
+      this.explodeTick(t);
+      remove();
+      return;
+    }
+    if (t.state === 'fly') {
+      t.vel.y -= GRAVITY * dt;
+      const step = scale(t.vel, dt);
+      const L = len(step);
+      if (L > 1e-5) {
+        const hit = world.raycast(t.pos, scale(step, 1 / L), L + 0.12);
+        if (hit) {
+          if (hit.normal.y > 0.6) {
+            t.pos = add(hit.point, v3(0, 0.02, 0));
+            t.state = 'crawl';
+            t.vel = v3();
+            this.events.push({ type: 'tickLand', tickId: t.id, pos: clone(t.pos) });
+          } else {
+            // 壁ではね返る
+            const n = hit.normal;
+            const d = t.vel.x * n.x + t.vel.y * n.y + t.vel.z * n.z;
+            t.vel = scale(sub(t.vel, scale(n, 2 * d)), 0.4);
+            t.pos = add(hit.point, scale(n, 0.1));
+          }
+        } else t.pos = add(t.pos, step);
       }
-      // 狙う相手（0.25 秒ごとに見直す。見えているいちばん近い敵）
-      if (t.state === 'crawl' && (t.targetId < 0 || Math.floor((t.life + dt) * 4) !== Math.floor(t.life * 4))) t.targetId = this.tickTarget(t, seek);
-      const target = t.targetId >= 0 ? sim.entities.get(t.targetId) : undefined;
-      if (target && (target.dead || target.downed > 0)) t.targetId = -1;
-      // 近くに敵がいれば爆発
-      let boom = t.life <= 0;
-      for (const o of sim.entities.values()) {
-        if (boom) break;
-        if (o.team === t.team || o.dead || !this.tickCanHit(o)) continue;
-        if (len(sub(chestOf(sim.actorOf(o)), t.pos)) < (t.state === 'fly' ? 1.2 : trig)) boom = true;
-      }
-      if (boom) {
-        this.explodeTick(t);
-        this.ticks.splice(i, 1);
-        continue;
-      }
-      if (t.state === 'fly') {
-        t.vel.y -= GRAVITY * dt;
-        const step = scale(t.vel, dt);
-        const L = len(step);
-        if (L > 1e-5) {
-          const hit = world.raycast(t.pos, scale(step, 1 / L), L + 0.12);
-          if (hit) {
-            if (hit.normal.y > 0.6) {
-              t.pos = add(hit.point, v3(0, 0.02, 0));
-              t.state = 'crawl';
-              t.vel = v3();
-              this.events.push({ type: 'tickLand', tickId: t.id, pos: clone(t.pos) });
-            } else {
-              // 壁ではね返る
-              const n = hit.normal;
-              const d = t.vel.x * n.x + t.vel.y * n.y + t.vel.z * n.z;
-              t.vel = scale(sub(t.vel, scale(n, 2 * d)), 0.4);
-              t.pos = add(hit.point, scale(n, 0.1));
-            }
-          } else t.pos = add(t.pos, step);
-        }
-        if (t.pos.y < (sim.level.killY ?? -50)) {
-          this.ticks.splice(i, 1);
-          continue;
-        }
-        continue;
-      }
-      // 地面を這う：狙う相手へ。いなければその場で待つ
-      let dir: Vec3 | null = null;
-      if (target) {
-        const to = sub(target.movement.pos, t.pos);
-        const Lh = lenH(to);
-        if (Lh > 0.05) dir = v3(to.x / Lh, 0, to.z / Lh);
-      }
-      if (!dir) continue;
-      const stepLen = speed * dt;
-      const goal = dir;
-      // 前に段差・壁があるか
-      const wall = world.raycast(add(t.pos, v3(0, 0.2, 0)), dir, stepLen + 0.3);
-      if (wall && wall.normal.y < 0.6) {
-        // 低い段差（1.1m まで）なら跳ねて越える
-        const over = add(wall.point, add(scale(dir, 0.35), v3(0, 1.5, 0)));
-        const top = world.raycast(over, v3(0, -1, 0), 1.5);
-        const clear = !world.raycast(add(t.pos, v3(0, 1.3, 0)), dir, 0.8);
-        if (top && top.normal.y > 0.6 && top.point.y - t.pos.y < 1.15 && clear) {
-          t.state = 'fly';
-          t.vel = v3(dir.x * 2.2, 7, dir.z * 2.2);
-          t.slide = 0;
-          continue;
-        }
-        // 高い壁：壁に沿って回り込む（向きは一度決めたら保つ）
-        const n = wall.normal;
-        const tan = v3(-n.z, 0, n.x);
-        const tl = lenH(tan) || 1;
-        if (!t.slide) t.slide = tan.x * goal.x + tan.z * goal.z >= 0 ? 1 : -1;
-        dir = v3((tan.x / tl) * t.slide, 0, (tan.z / tl) * t.slide);
-        // 回り込んだ先も壁なら、向きを変える
-        if (world.raycast(add(t.pos, v3(0, 0.2, 0)), dir, stepLen + 0.3)) {
-          t.slide = -t.slide;
-          dir = scale(dir, -1);
-        }
-      } else if (t.slide) {
-        // 壁の端まで来た：相手のほうへ戻る
-        t.slide = 0;
-      }
-      // 近づけていなければ、その相手はしばらく狙わない
-      if (wall && wall.normal.y < 0.6) t.stuck = (t.stuck ?? 0) + dt;
-      else t.stuck = Math.max(0, (t.stuck ?? 0) - dt * 0.5);
-      if ((t.stuck ?? 0) > 2.5 && target) {
-        t.ignoreId = target.id;
-        t.ignoreT = 4;
-        t.targetId = -1;
-        t.stuck = 0;
-        t.slide = 0;
-        continue;
-      }
-      t.yaw = Math.atan2(-dir.x, -dir.z);
-      const next = add(t.pos, scale(dir, stepLen));
-      const g = world.raycast(add(next, v3(0, 0.6, 0)), v3(0, -1, 0), 1.3);
-      if (g && g.normal.y > 0.5) {
-        t.pos = v3(next.x, g.point.y + 0.02, next.z);
-        t.stride += stepLen;
-      } else {
-        // 足場が切れた：落ちる
-        t.pos = next;
+      if (t.pos.y < (sim.level.killY ?? -50)) remove();
+      return;
+    }
+    // 地面を這う：狙う相手を追いかける。近くに誰もいなければ、その場で待つ
+    let dir: Vec3 | null = null;
+    if (target) {
+      const to = sub(target.movement.pos, t.pos);
+      const Lh = lenH(to);
+      if (Lh > 0.05) dir = v3(to.x / Lh, 0, to.z / Lh);
+    }
+    if (!dir) return;
+    const stepLen = speed * dt;
+    const goal = dir;
+    // 前に段差・壁があるか
+    const wall = world.raycast(add(t.pos, v3(0, 0.2, 0)), dir, stepLen + 0.3);
+    if (wall && wall.normal.y < 0.6) {
+      // 低い段差（1.1m まで）なら跳ねて越える
+      const over = add(wall.point, add(scale(dir, 0.35), v3(0, 1.5, 0)));
+      const top = world.raycast(over, v3(0, -1, 0), 1.5);
+      const clear = !world.raycast(add(t.pos, v3(0, 1.3, 0)), dir, 0.8);
+      if (top && top.normal.y > 0.6 && top.point.y - t.pos.y < 1.15 && clear) {
         t.state = 'fly';
-        t.vel = v3(dir.x * speed, 0, dir.z * speed);
+        t.vel = v3(dir.x * 2.2, 7, dir.z * 2.2);
+        t.slide = 0;
+        return;
       }
+      // 高い壁：壁に沿って回り込む（向きは一度決めたら保つ）
+      const n = wall.normal;
+      const tan = v3(-n.z, 0, n.x);
+      const tl = lenH(tan) || 1;
+      if (!t.slide) t.slide = tan.x * goal.x + tan.z * goal.z >= 0 ? 1 : -1;
+      dir = v3((tan.x / tl) * t.slide, 0, (tan.z / tl) * t.slide);
+      // 回り込んだ先も壁なら、向きを変える
+      if (world.raycast(add(t.pos, v3(0, 0.2, 0)), dir, stepLen + 0.3)) {
+        t.slide = -t.slide;
+        dir = scale(dir, -1);
+      }
+    } else if (t.slide) {
+      // 壁の端まで来た：相手のほうへ戻る
+      t.slide = 0;
+    }
+    // 近づけていなければ、その相手はしばらく狙わない
+    if (wall && wall.normal.y < 0.6) t.stuck = (t.stuck ?? 0) + dt;
+    else t.stuck = Math.max(0, (t.stuck ?? 0) - dt * 0.5);
+    if ((t.stuck ?? 0) > 2.5 && target) {
+      t.ignoreId = target.id;
+      t.ignoreT = 4;
+      t.targetId = -1;
+      t.stuck = 0;
+      t.slide = 0;
+      return;
+    }
+    t.yaw = Math.atan2(-dir.x, -dir.z);
+    const next = add(t.pos, scale(dir, stepLen));
+    const g = world.raycast(add(next, v3(0, 0.6, 0)), v3(0, -1, 0), 1.3);
+    if (g && g.normal.y > 0.5) {
+      t.pos = v3(next.x, g.point.y + 0.02, next.z);
+      t.stride += stepLen;
+    } else {
+      // 足場が切れた：落ちる
+      t.pos = next;
+      t.state = 'fly';
+      t.vel = v3(dir.x * speed, 0, dir.z * speed);
     }
   }
 
@@ -571,13 +619,16 @@ export class BoostSystem {
     return o.kind === 'pilot' || o.kind === 'grunt' || o.kind === 'holo';
   }
 
-  /** 狙う相手：見えているいちばん近い敵。いなければ、近く（12m）の敵（見えていなくても音で気づく） */
+  /**
+   * 狙う相手（パイロット・歩兵・ホロパイロット）：見えているいちばん近い敵。
+   * いなければ、近く（CHASE_RANGE、20m）のいちばん近い敵（見えていなくても気づいて追いかける）
+   */
   private tickTarget(t: TickBot, range: number): number {
     const sim = this.sim;
     let best = -1,
       bd = range;
     let near = -1,
-      nd = Math.min(12, range);
+      nd = Math.min(boostNum(this.cfg.BOOSTS.ticks, 'CHASE_RANGE', 20), range);
     const from = add(t.pos, v3(0, 0.6, 0));
     for (const o of sim.entities.values()) {
       if (o.team === t.team || o.dead || !this.tickCanHit(o) || o.id === t.ignoreId) continue;
@@ -618,6 +669,7 @@ export class BoostSystem {
 
   dispose(): void {
     this.holos.clear();
+    for (const t of this.ticks) this.sim.despawn(t.entityId);
     this.ticks.length = 0;
     this.rewinds.clear();
     this.history.clear();

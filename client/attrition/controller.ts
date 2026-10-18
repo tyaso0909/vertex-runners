@@ -347,6 +347,9 @@ export class AttritionController {
       case 'tickExplode':
         h.sfx.explosionAt(ev.pos, dist(ev.pos));
         break;
+      case 'tickDestroyed':
+        h.sfx.boostAt('tickBreak', ev.pos, dist(ev.pos));
+        break;
       case 'holoGone':
         if (ev.shot) h.sfx.boostAt('holopilot', ev.pos, dist(ev.pos) + 6);
         break;
@@ -382,7 +385,7 @@ export class AttritionController {
       if (e.id === p.id || e.dead) continue;
       const pos = e.movement.pos;
       if (e.team === p.team) {
-        if (e.kind !== 'holo') marks.push({ x: pos.x, z: pos.z, kind: e.kind === 'pilot' ? 'ally' : 'allyGrunt', yaw: e.lastCmd.yaw });
+        if (e.kind !== 'holo' && e.kind !== 'tick') marks.push({ x: pos.x, z: pos.z, kind: e.kind === 'pilot' ? 'ally' : 'allyGrunt', yaw: e.lastCmd.yaw });
       } else if (e.revealed > 0 && e.revealDelay <= 0) marks.push({ x: pos.x, z: pos.z, kind: 'enemy' });
     }
     // マップハック：1.5 秒ごとに映した敵の位置（次に映すまでに薄くなる）
@@ -401,7 +404,8 @@ export class AttritionController {
   private updateFootsteps(dt: number, listener: THREE.Vector3) {
     const sim = this.match.sim;
     for (const e of sim.entities.values()) {
-      if (e.id === this.match.player!.id || e.dead) continue;
+      // ティックは足音を鳴らさない（着地の音だけ）
+      if (e.id === this.match.player!.id || e.dead || e.kind === 'tick') continue;
       const mv = e.movement;
       const d = Math.hypot(mv.pos.x - listener.x, mv.pos.y - listener.y, mv.pos.z - listener.z);
       if (d > 28 || (mv.state !== 'ground' && mv.state !== 'wallrun')) continue;

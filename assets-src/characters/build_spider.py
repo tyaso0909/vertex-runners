@@ -10,7 +10,7 @@
                                             骨：hips（胴）と leg0〜leg5（脚。付け根で回る）。動き：Idle / Run / Jump / Death
                                             マテリアルの名前 "GlowRedMap"：ゲームでテクスチャの赤い灯り（目など）を光らせる
   client/assets/characters/assault_lod.glb  遠く用（同じ骨。面を減らす）
-  client/assets/props/tick.glb              ティック（幅 0.5m）。部品に分ける：TickBody（胴と赤い目。目のマテリアルは "TkRed"）と
+  client/assets/props/tick.glb              ティック（高さ 0.8m。爆弾兵と同じ大きさ）。部品に分ける：TickBody（胴と赤い目。目のマテリアルは "TkRed"）と
                                             TickLeg0〜5（付け根が原点。ゲーム側 boostViews.ts で振って歩かせる）。正面は Blender の +Y
 
 作り方
@@ -39,7 +39,6 @@ PROP_DIR = os.path.join(ROOT, "client", "assets", "props")
 FPS = 30
 
 BOMBER_HEIGHT = 0.8  # 普通の兵士（1.7m）の約半分
-TICK_WIDTH = 0.5  # ティック（爆弾兵よりずっと小さい。前のティックとほぼ同じ幅）
 # 胴と脚の分け方（元のモデルの大きさで。元は高さ 0.64・幅 1.0）
 LEG_R = 0.17
 LEG_Z = 0.30
@@ -487,7 +486,8 @@ def save_sheet(files, path):
 
 def build_tick(preview=False):
     print("[ティック]")
-    o, k = load(width_to=TICK_WIDTH)
+    # ティックは爆弾兵と同じ大きさ（消耗戦で撃って壊せる、爆弾兵と同じ当たり判定）
+    o, k = load(scale_to=BOMBER_HEIGHT)
     src_img = base_image(o)
     owner, pivots, dirs = classify(o)
     # ティックは正面が +Y（ゲームの向き yaw=0）。元のモデルは -Y が正面なので 180° 回す。
@@ -496,7 +496,7 @@ def build_tick(preview=False):
     remap = {0: 5, 1: 4, 2: 3, 3: 2, 4: 1, 5: 0}
     owner = [remap[w] if w >= 0 else -1 for w in owner]
     pivots = [pivots[[i for i in range(6) if remap[i] == j][0]] for j in range(6)]
-    img = scaled_image(src_img, "tick_tex", 512)
+    img = scaled_image(src_img, "tick_tex", 1024)
     shell = tex_material("TkShell", img, rough=0.5, metal=0.35)
     red = tex_material("TkRed", img, emission=(1.0, 0.16, 0.12), strength=6.0)
     reds = red_faces(o, src_img)
@@ -537,7 +537,7 @@ def build_tick(preview=False):
     export([root, *root.children], os.path.join(PROP_DIR, "tick.glb"), False)
     if preview:
         sc = bpy.context.scene
-        setup_render(sc, 0.8, 0.0)
+        setup_render(sc, 1.5, 0.35)
         fp = os.path.join(HERE, "preview", "tick_spider.png")
         sc.render.filepath = fp
         bpy.ops.render.render(write_still=True)

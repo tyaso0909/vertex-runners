@@ -193,6 +193,8 @@ export class BotWorld {
 
   /** チームで共有する、敵の位置 */
   report(team: number, enemy: Entity): void {
+    // ティックはチームに知らせない（小さく、すぐ爆発する）
+    if (enemy.kind === 'tick') return;
     let m = this.intel.get(team);
     if (!m) this.intel.set(team, (m = new Map()));
     m.set(enemy.id, { pos: { ...enemy.movement.pos }, time: this.sim.time, pilot: enemy.kind === 'pilot' || enemy.kind === 'decoy' || enemy.kind === 'holo' });

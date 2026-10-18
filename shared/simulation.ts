@@ -47,14 +47,14 @@ export const TICK_DT = 1 / TICK_RATE;
 /**
  * 参加者の種類：パイロット（プレイヤー・ボット）と、弱い歩兵。
  * タワーディフェンスでは、敵（爆弾兵・重装兵・ドローン・大型兵器）と、撃たれる建物（タレット・コア・バリケード）、
- * 敵をだます囮（ダミーバルーン・消耗戦のホロパイロット）も参加者にする（弾・爆風・倒したときの記録を、プレイヤーと同じ仕組みで扱うため）
+ * 敵をだます囮（ダミーバルーン・消耗戦のホロパイロット）、消耗戦のティック（撃って壊せる小さな爆弾ロボット）も参加者にする（弾・爆風・倒したときの記録を、プレイヤーと同じ仕組みで扱うため）
  */
-export type EntityKind = 'pilot' | 'grunt' | 'assault' | 'heavy' | 'mortar' | 'drone' | 'boss' | 'turret' | 'core' | 'barricade' | 'decoy' | 'holo';
+export type EntityKind = 'pilot' | 'grunt' | 'assault' | 'heavy' | 'mortar' | 'drone' | 'boss' | 'turret' | 'core' | 'barricade' | 'decoy' | 'holo' | 'tick';
 
 /** 動かない建物（タレット・コア・バリケード） */
 export const isStructure = (e: { kind: EntityKind }): boolean => e.kind === 'turret' || e.kind === 'core' || e.kind === 'barricade';
-/** 撃たない物（建物と囮。ホロパイロットは走るが撃たない） */
-export const isInert = (e: { kind: EntityKind }): boolean => isStructure(e) || e.kind === 'decoy' || e.kind === 'holo';
+/** 撃たない物（建物と囮。ホロパイロットは走るが撃たない。ティックは這って近づき、爆発するだけ） */
+export const isInert = (e: { kind: EntityKind }): boolean => isStructure(e) || e.kind === 'decoy' || e.kind === 'holo' || e.kind === 'tick';
 
 export interface Entity {
   id: number;
@@ -172,6 +172,8 @@ export interface SimRules {
   reviveHealth?: number;
   /** 受けるダメージの倍率（タワーディフェンス：タレットの装甲など） */
   damageScale?(victim: Entity, source: DamageSource, attackerId: number): number;
+  /** ソラのパッシブで、倒した敵が弾薬を落とすか（なければ落とす。タワーディフェンスは弾が無限なので落とさない） */
+  ammoDrops?: boolean;
 }
 
 export interface AmmoDrop {
@@ -791,7 +793,7 @@ export class Simulation {
       head,
     });
     // ソラのパッシブ：倒した敵が弾薬を落とす
-    if (ke && e.kind !== 'holo' && this.ccfg[ke.character].PASSIVE.AMMO_DROP === true) {
+    if (ke && e.kind !== 'holo' && e.kind !== 'tick' && this.rules.ammoDrops !== false && this.ccfg[ke.character].PASSIVE.AMMO_DROP === true) {
       const drop: AmmoDrop = { id: this.nextDropId++, pos: v3(e.movement.pos.x, e.movement.pos.y + 0.3, e.movement.pos.z), time: AMMO_DROP_LIFETIME };
       this.ammoDrops.push(drop);
       this.events.push({ type: 'ammoDropSpawn', drop });
@@ -1272,7 +1274,7 @@ export class Simulation {
     if (!t) return;
     // タレットは倒すと少し長く止まる
     if (t.kind === 'turret') t.respawnTimer = this.wcfg.COMMON.TURRET_RESPAWN_TIME;
-    if (this.ccfg[e.character].PASSIVE.AMMO_DROP === true) {
+    if (this.rules.ammoDrops !== false && this.ccfg[e.character].PASSIVE.AMMO_DROP === true) {
       const drop: AmmoDrop = { id: this.nextDropId++, pos: v3(t.pos.x, t.pos.y + 0.3, t.pos.z), time: AMMO_DROP_LIFETIME };
       this.ammoDrops.push(drop);
       this.events.push({ type: 'ammoDropSpawn', drop });

@@ -151,6 +151,11 @@ describe('タワーディフェンス：タレット', () => {
 });
 
 describe('タワーディフェンス：敵', () => {
+  it('弾は無限なので、ソラのパッシブでも弾薬は落ちない（落とさない決まり）', () => {
+    const m = makeMatch({ quiet: true });
+    expect(m.sim.rules.ammoDrops).toBe(false);
+  });
+
   it('重装兵の正面の盾は弾を止め、背中は弱点', () => {
     const a = { id: 1, team: 1, pos: v3(0, 0, 0), height: 2.25, body: HEAVY_BODY, yaw: 0 };
     // 正面（-Z）から胴を撃つ → 盾に止まる

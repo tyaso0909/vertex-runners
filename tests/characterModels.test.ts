@@ -85,6 +85,13 @@ describe('爆弾兵・ティック・迫撃砲兵のモデル', () => {
     const names = g.nodes.map((n) => n.name);
     for (const n of ['TickBody', 'TickLeg0', 'TickLeg1', 'TickLeg2', 'TickLeg3', 'TickLeg4', 'TickLeg5']) expect(names, n).toContain(n);
     expect(g.materials.map((m) => m.name)).toContain('TkRed');
+    // 爆弾兵と同じ大きさ（高さ約 0.8m）。胴の頂点の高さで確かめる
+    const gg = g as unknown as { nodes: { name?: string; mesh?: number; translation?: number[] }[]; meshes: { primitives: { attributes: Record<string, number> }[] }[]; accessors: { max?: number[]; min?: number[] }[] };
+    const body = gg.nodes.find((n) => n.name === 'TickBody')!;
+    const acc = gg.accessors[gg.meshes[body.mesh!].primitives[0].attributes.POSITION];
+    const top = acc.max![1] + (body.translation?.[1] ?? 0);
+    expect(top).toBeGreaterThan(0.7);
+    expect(top).toBeLessThan(0.9);
   });
 
   it('迫撃砲兵：重装兵の体（盾なし・普通の大きさ）に、歩兵の動き', () => {
